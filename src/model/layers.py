@@ -5,6 +5,133 @@ from einops import rearrange, reduce, repeat
 
 
 
+class Residual(nn.Module):
+    def __init__(self, channels_in, filters, kernel_size=5, dilation_rate=1, dropout_rate=0.1):
+        super(Residual, self).__init__()
+        self.conv1 = nn.Conv1d(channels_in, filters, kernel_size=kernel_size, dilation=dilation_rate, padding='same')
+        self.conv2 = nn.Conv1d(filters, filters, kernel_size=1, padding=0)
+        self.res_conv = nn.Conv1d(channels_in, filters, kernel_size=1, padding=0)
+        self.activation = nn.ELU()
+        self.dropout = nn.Dropout2d(dropout_rate)
+
+    def forward(self, x):
+        y = x.clone()
+        x = self.conv1(x)
+        x = self.activation(x)
+        x = self.dropout(x)
+        x = self.conv2(x)
+        return self.res_conv(y) + x, x
+
+
+class TCN(nn.Module):
+    def __init__(self, channels_in, filters=16, kernel_size=5, dilations=[2**k for k in range(10)], dropout_rate=0.1):
+        super(TCN, self).__init__()
+        channels_ls = [channels_in].extend([filters for i in range(len(dilations)-1)])
+        self.tcn = nn.ModuleList([Residual(channels_ls[i], filters, kernel_size, dilations[i], dropout_rate) for i in range(len(dilations))])
+
+    def forward(self,x):
+        skip = 0.
+        for layer in self.tcn:
+            x, x_no_res = layer(x)
+            skip = skip+x_no_res
+        return x, skip
+
+
+class Head(nn.Module):
+    def __init__(self, channels_in, filters=16, dropout_rate=0.1):
+        super(Head, self).__init__()
+        self.pool = nn.AdaptiveAvgPool1d(1)
+        self.activation = nn.ELU()
+        self.dropout = nn.Dropout(dropout_rate)
+        self.linear = nn.Linear(channels_in, filters)
+
+    def forward(self,x):
+        x = self.pool(x)
+        x = torch.squeeze(x, -1)
+        x = self.dropout(x)
+        x = self.linear(x)
+        x = self.activation(x)
+        return x
+
+
+class Hat(nn.Module): # this is called Hat because it is used on top of the Head, get it?
+    def __init__(self, channels_in, output_dim=300):
+        super(Hat, self).__init__()
+        self.classification = nn.Linear(channels_in, output_dim)
+        self.regression = nn.Linear(channels_in, 1)
+
+    def forward(self,x):
+        return self.regression(x), self.classification(x)
+
+
+class Model(nn.Module):
+    def __init__(self, filters=16, dilations=[2**k for k in range(10)], dropout_rate=0.1, output_dim=300):
+        super(Model, self).__init__()
+        self.conv1 = nn.Conv2d(1, filters, kernel_size=(3,3))
+        self.conv2 = nn.Conv2d(filters, filters, kernel_size=(3,3))
+        self.conv3 = nn.Conv2d(filters, filters, kernel_size=(8,1))
+        self.pool = nn.MaxPool2d((3,1))
+        self.batch_norm = nn.BatchNorm2d(1)
+        self.activation = nn.ELU()
+        self.dropout = nn.Dropout(dropout_rate)
+
+        self.tcn = TCN(filters, filters, 5, dilations, dropout_rate)
+        self.head = Head(filters, filters, dropout_rate)
+        self.hat = Hat(filters, output_dim)
+
+    def forward(self, x):
+        x = self.batch_norm(x)
+
+        x = self.conv1(x)
+        x = self.activation(x)
+        x = self.pool(x)
+        x = self.dropout(x)
+
+        x = self.conv2(x)
+        x = self.activation(x)
+        x = self.pool(x)
+        x = self.dropout(x)
+
+        x = self.conv3(x)
+        x = self.activation(x)
+        x = self.dropout(x)
+
+        x = torch.squeeze(x,-2)
+        x, skip = self.tcn(x)
+        x = self.head(x) # !!!!!! IMPORTANT !!!!!!: the input to the head should be the aggregate of features from all residuals 'skip', but official implementation simply uses the output of the last residual 'x'
+        classification_output, regression_output = self.hat(x)
+
+        return classification_output, regression_output
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # adapted from https://github.com/lucidrains/x_transformers/x_transformers.py
 class DynamicPositionBias(nn.Module):
     def __init__(self, dim, heads, depth = 1, log_distance = False, norm = False):
@@ -135,7 +262,11 @@ def init_weights(m):
     if m.bias is not None:
         nn.init.constant_(m.bias, 0)
 
-        
+
+
+
+
+
 class ResBlock(nn.Module):
     def __init__(self, inp, filters, kernel_size=(1,4), strides=(1,1), upsample=False, emb=False, noise=False, norm=True, padding='same', cond_dim=32, name='0', leaky=False, attention=False):
         super(ResBlock, self).__init__()
