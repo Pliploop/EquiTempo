@@ -90,16 +90,15 @@ class MTATDataset(Dataset):
         # print(audio_1.shape)
         # print(audio_2.shape)
 
-        return 0
 
         ## Augmentations
 
 
-        # return {
-        #     "audio_1" : torch.Tensor(librosa.amplitude_to_db(self.melgram(audio_1))),
-        #     "audio_2" : torch.Tensor(librosa.amplitude_to_db(self.melgram(audio_2))),
-        #     "rp_1" : rp_1,
-        #     "rp_2" : rp_2}
+        return {
+            "audio_1" : torch.Tensor(librosa.amplitude_to_db(self.melgram(audio_1))),
+            "audio_2" : torch.Tensor(librosa.amplitude_to_db(self.melgram(audio_2))),
+            "rp_1" : rp_1,
+            "rp_2" : rp_2}
 
     def create_dataloader(self):
         return DataLoader(dataset=self,batch_size=self.config.batch_size, shuffle=True)
