@@ -75,4 +75,4 @@ class MTATDataset(Dataset):
             "rp_2" : rp_2}
 
     def create_dataloader(self):
-        return DataLoader(dataset=self,batch_size=MTATConfig.batch_size, shuffle=True)
+        return DataLoader(dataset=self,batch_size=self.config.batch_size, shuffle=True)
