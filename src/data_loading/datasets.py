@@ -34,7 +34,7 @@ class MTATDataset(Dataset):
     def __getitem__(self, idx):
 
 
-        audio_path = f"{self.audio_dir}/{self.annotations.mp3_path[idx]}"
+        audio_path = f"{self.audio_dir}/{self.annotations.mp3_path.iloc[idx]}"
 
         len_audio_n = self.preprocessing_config.len_audio_n
         len_audio_n_dataset = self.preprocessing_config.len_audio_n_dataset
