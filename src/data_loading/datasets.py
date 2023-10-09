@@ -21,10 +21,12 @@ class MTATDataset(Dataset):
         self.train = train
         self.config = MTATConfig()
         self.preprocessing_config = PreprocessingConfig()
+        self.melgram = T.MelSpectrogram(sample_rate=44100, f_min=30, f_max=17000, n_mels=81, n_fft=2048, win_length=2048, hop_length=441, power=1)
+        ## Move melgram params to config
 
 
     def __len__(self):
-        return len(self.img_labels)
+        return len(self.annotations)
 
     def __getitem__(self, idx):
         audio_path = f"{self.audio_dir}/{self.annotations.mp3_path[idx]}"
@@ -47,7 +49,6 @@ class MTATDataset(Dataset):
         ## kinda tedious, but torch only stretches specgrams
         ## maybe specgram -> stretch -> specgram?
 
-        print(audio.shape)
     
 
         ## stretching
@@ -66,9 +67,12 @@ class MTATDataset(Dataset):
 
         ## Augmentations
 
-        melgram = T.MelSpectrogram(sample_rate=44100, f_min=30, f_max=17000, n_mels=81, n_fft=2048, win_length=2048, hop_length=441, power=1)
 
-        return librosa.amplitude_to_db(melgram(audio_1)),librosa.amplitude_to_db(melgram(audio_2))
+        return {
+            "audio_1" : torch.Tensor(librosa.amplitude_to_db(self.melgram(audio_1))),
+            "audio_2" : torch.Tensor(librosa.amplitude_to_db(self.melgram(audio_2))),
+            "rp_1" : rp_1,
+            "rp_2" : rp_2}
 
     def create_dataloader(self):
         return DataLoader(dataset=self,batch_size=MTATConfig.batch_size, shuffle=True)
