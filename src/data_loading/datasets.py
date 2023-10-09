@@ -19,9 +19,7 @@ from src.data_loading.preprocessing import *
 class MTATDataset(Dataset):
     def __init__(self, annotations_file = MTATConfig().annotations_path, audio_dir = MTATConfig().dir_path, train = True):
         self.annotations = pd.read_csv(annotations_file, sep='\t')
-        print(len(self.annotations))
         self.annotations = self.annotations[~self.annotations.mp3_path.isna()]
-        print(len(self.annotations))
         self.audio_dir = audio_dir
         self.train = train
         self.config = MTATConfig()
