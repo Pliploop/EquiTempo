@@ -19,6 +19,9 @@ from src.data_loading.preprocessing import *
 class MTATDataset(Dataset):
     def __init__(self, annotations_file = MTATConfig().annotations_path, audio_dir = MTATConfig().dir_path, train = True):
         self.annotations = pd.read_csv(annotations_file, sep='\t')
+        print(len(self.annotations))
+        self.annotations = self.annotations[~self.annotations.mp3_path.isna()]
+        print(len(self.annotations))
         self.audio_dir = audio_dir
         self.train = train
         self.config = MTATConfig()
@@ -32,11 +35,8 @@ class MTATDataset(Dataset):
 
     def __getitem__(self, idx):
 
-        print(self.annotations.mp3_path.head())
 
         audio_path = f"{self.audio_dir}/{self.annotations.mp3_path[idx]}"
-
-        print(audio_path)
 
         len_audio_n = self.preprocessing_config.len_audio_n
         len_audio_n_dataset = self.preprocessing_config.len_audio_n_dataset
@@ -82,6 +82,9 @@ class MTATDataset(Dataset):
         audio_1 = librosa.effects.time_stretch(audio,rate=rp_1)
         audio_2 = librosa.effects.time_stretch(audio,rate=rp_2)
 
+        # print(audio_1.shape)
+        # print(audio_2.shape)
+
 
         ## cropping or padding
         audio_1 = pad_or_truncate(torch.tensor(audio_1),len_audio_n)
@@ -98,4 +101,5 @@ class MTATDataset(Dataset):
             "rp_2" : rp_2}
 
     def create_dataloader(self):
-        return DataLoader(dataset=self,batch_size=MTATConfig().batch_size, shuffle=True)
+        return DataLoader(dataset=self,batch_size=self.config.batch_size, shuffle=True)
+
