@@ -50,7 +50,6 @@ def loss_function(c1, c2, alpha1, alpha2, eps=1e-7):
 
 
 def train_iteration(x1, x2, alpha1, alpha2, model, optimizer, scaler):
-    x1 = x1.to(model)
     with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=config.mixed_precision):
         _,c1 = model(x1)
         _,c2 = model(x2)
@@ -76,40 +75,40 @@ def train_loop(dataloader, model, optimizer, scaler, it=0, writer=None):
         update_lr(config.lr, optimizer)
     model = model.to(config.device)
     model.train()
-    try:
-        counter = 0
-        loss = 0.
-        for epoch in range(config.epochs):
-            bef = time.time()
-            bef_loop = time.time()
-            loss_list = []
-            pbar = tqdm(dataloader, desc=f'Epoch {epoch}/{config.epochs}', leave=True, total=dataloader_length)
-            for batch_i,data in enumerate(pbar):
-                loss = train_iteration(data['audio_1'].to(config.device),data['audio_2'].to(config.device),data['rp_1'],data['rp_2'], model,optimizer,scaler)
-                if writer is not None:
-                    writer.add_scalar('loss', loss, it)
-                    writer.add_scalar('learning_rate', optimizer.param_groups[0]['lr'], it)
-                loss_list.append(loss)
-                counter += 1
-                it += 1
-                if config.warmup:
-                    if epoch==0:
-                        lr = lr + (1/dataloader_length)*target_lr
-                        update_lr(lr, optimizer)
+    # try:
+    counter = 0
+    loss = 0.
+    for epoch in range(config.epochs):
+        bef = time.time()
+        bef_loop = time.time()
+        loss_list = []
+        pbar = tqdm(dataloader, desc=f'Epoch {epoch}/{config.epochs}', leave=True, total=dataloader_length)
+        for batch_i,data in enumerate(pbar):
+            loss = train_iteration(data['audio_1'].to(config.device),data['audio_2'].to(config.device),data['rp_1'],data['rp_2'], model,optimizer,scaler)
+            if writer is not None:
+                writer.add_scalar('loss', loss, it)
+                writer.add_scalar('learning_rate', optimizer.param_groups[0]['lr'], it)
+            loss_list.append(loss)
+            counter += 1
+            it += 1
+            if config.warmup:
+                if epoch==0:
+                    lr = lr + (1/dataloader_length)*target_lr
+                    update_lr(lr, optimizer)
 
-                if batch_i%config.display_progress_every==0:
-                    pbar.set_postfix({'Loss_sc': np.mean(loss_list[-counter:], axis=0),
-                                        'Iter': it,
-                                        'LR': optimizer.param_groups[0]['lr'],
-                                        'Time/Iter': (time.time()-bef_loop)/config.display_progress_every})
-                    bef_loop = time.time()
-            save_model(np.mean(loss_list[-counter:], axis=0), it, model,optimizer,scaler)
-            # test_model(model, writer=writer, step=it, device=device)
-            counter = 0
-    except Exception as e:
-        print(e)
-    finally:
+            if batch_i%config.display_progress_every==0:
+                pbar.set_postfix({'Loss_sc': np.mean(loss_list[-counter:], axis=0),
+                                    'Iter': it,
+                                    'LR': optimizer.param_groups[0]['lr'],
+                                    'Time/Iter': (time.time()-bef_loop)/config.display_progress_every})
+                bef_loop = time.time()
         save_model(np.mean(loss_list[-counter:], axis=0), it, model,optimizer,scaler)
-        return it
+        # test_model(model, writer=writer, step=it, device=device)
+        counter = 0
+    # except Exception as e:
+    #     print(e)
+    # finally:
+    #     save_model(np.mean(loss_list[-counter:], axis=0), it, model,optimizer,scaler)
+    #     return it
 
 
