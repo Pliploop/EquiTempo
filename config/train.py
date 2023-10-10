@@ -2,8 +2,8 @@ from config.template import Config
 
 class TrainConfig(Config):
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
         self.mixed_precision = True
         self.filters = 16
