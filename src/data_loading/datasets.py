@@ -52,6 +52,8 @@ class MTATDataset(Dataset):
             info = sf.info(audio_path)
             if self.extension == 'mp3':
                 length = info.frames-self.preprocessing_config.pad_mp3
+            else:
+                length = info.frames
             samplerate = info.samplerate
             audio, sample_rate = sf.read(audio_path, stop=None, dtype='float32', always_2d=True)
             start_crop = np.random.randint(0, length-len_audio_n_dataset)
