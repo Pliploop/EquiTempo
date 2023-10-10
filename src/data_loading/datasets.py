@@ -23,7 +23,7 @@ class MTATDataset(Dataset):
         
         self.config = MTATConfig(dict = global_config.MTAT_config)
         self.preprocessing_config = PreprocessingConfig(dict = global_config.preprocessing_config)
-
+        self.extension = self.config.extension
         self.annotations = pd.read_csv(self.config.annotations_path, sep='\t')
         self.annotations = self.annotations[~self.annotations.mp3_path.isna()]
         self.annotations['file_path'] = self.annotations['mp3_path'].apply(lambda x:x[:-3]+self.config.extension)
