@@ -2,8 +2,8 @@ from config.template import Config
 
 class PreprocessingConfig(Config):
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self.sr = 44100
         self.dataset_sr = 16000
         self.len_audio_s = 13.6

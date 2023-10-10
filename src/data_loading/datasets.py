@@ -11,19 +11,22 @@ import torchaudio.functional as F
 import torchaudio.transforms as T
 from config.dataset import MTATConfig
 from config.preprocessing import PreprocessingConfig
+from config.full import GlobalConfig
 from torch.utils.data import DataLoader, Dataset
 import librosa
 from src.data_loading.preprocessing import *
 
 
 class MTATDataset(Dataset):
-    def __init__(self, annotations_file = MTATConfig().annotations_path, audio_dir = MTATConfig().dir_path, train = True):
-        self.annotations = pd.read_csv(annotations_file, sep='\t')
+    def __init__(self, train = True, global_config = GlobalConfig()):
+        
+        self.config = MTATConfig(dict = global_config.MTAT_config)
+        self.preprocessing_config = PreprocessingConfig(dict = global_config.preprocessing_config)
+
+        self.annotations = pd.read_csv(self.config.annotations_path, sep='\t')
         self.annotations = self.annotations[~self.annotations.mp3_path.isna()]
-        self.audio_dir = audio_dir
+        self.audio_dir = self.config.dir_path
         self.train = train
-        self.config = MTATConfig()
-        self.preprocessing_config = PreprocessingConfig()
         self.melgram = T.MelSpectrogram(sample_rate=44100, f_min=30, f_max=17000, n_mels=81, n_fft=2048, win_length=2048, hop_length=441, power=2)
 
 
