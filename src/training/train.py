@@ -15,7 +15,7 @@ class Trainer:
     def __init__(self, global_config = GlobalConfig()) -> None:
         self.config = TrainConfig(dict = global_config.train_config)
         self.dataset_config = MTATConfig(dict = global_config.MTAT_config)
-        
+            
 
     def init_model(self,path=None, test=False):
         device = self.config.device
@@ -54,7 +54,6 @@ class Trainer:
 
 
     def train_iteration(self,x1, x2, alpha1, alpha2, model, optimizer, scaler):
-        x1 = x1.to(model)
         with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=self.config.mixed_precision):
             _,c1 = model(x1)
             _,c2 = model(x2)
@@ -80,40 +79,40 @@ class Trainer:
             self.update_lr(self.config.lr, optimizer)
         model = model.to(self.config.device)
         model.train()
-        try:
-            counter = 0
-            loss = 0.
-            for epoch in range(self.config.epochs):
-                bef = time.time()
-                bef_loop = time.time()
-                loss_list = []
-                pbar = tqdm(dataloader, desc=f'Epoch {epoch}/{self.config.epochs}', leave=True, total=dataloader_length)
-                for batch_i,data in enumerate(pbar):
-                    loss = self.train_iteration(data['audio_1'].to(self.config.device),data['audio_2'].to(self.config.device),data['rp_1'],data['rp_2'], model,optimizer,scaler)
-                    if writer is not None:
-                        writer.add_scalar('loss', loss, it)
-                        writer.add_scalar('learning_rate', optimizer.param_groups[0]['lr'], it)
-                    loss_list.append(loss)
-                    counter += 1
-                    it += 1
-                    if self.config.warmup:
-                        if epoch==0:
-                            lr = lr + (1/dataloader_length)*target_lr
-                            self.update_lr(lr, optimizer)
+        # try:
+        counter = 0
+        loss = 0.
+        for epoch in range(self.config.epochs):
+            bef = time.time()
+            bef_loop = time.time()
+            loss_list = []
+            pbar = tqdm(dataloader, desc=f'Epoch {epoch}/{self.config.epochs}', leave=True, total=dataloader_length)
+            for batch_i,data in enumerate(pbar):
+                loss = self.train_iteration(data['audio_1'].to(self.config.device),data['audio_2'].to(self.config.device),data['rp_1'],data['rp_2'], model,optimizer,scaler)
+                if writer is not None:
+                    writer.add_scalar('loss', loss, it)
+                    writer.add_scalar('learning_rate', optimizer.param_groups[0]['lr'], it)
+                loss_list.append(loss)
+                counter += 1
+                it += 1
+                if self.config.warmup:
+                    if epoch==0:
+                        lr = lr + (1/dataloader_length)*target_lr
+                        self.update_lr(lr, optimizer)
 
-                    if batch_i%self.config.display_progress_every==0:
-                        pbar.set_postfix({'Loss_sc': np.mean(loss_list[-counter:], axis=0),
-                                            'Iter': it,
-                                            'LR': optimizer.param_groups[0]['lr'],
-                                            'Time/Iter': (time.time()-bef_loop)/self.config.display_progress_every})
-                        bef_loop = time.time()
-                self.save_model(np.mean(loss_list[-counter:], axis=0), it, model,optimizer,scaler)
-                # test_model(model, writer=writer, step=it, device=device)
-                counter = 0
-        except Exception as e:
-            print(e)
-        finally:
+                if batch_i%self.config.display_progress_every==0:
+                    pbar.set_postfix({'Loss_sc': np.mean(loss_list[-counter:], axis=0),
+                                        'Iter': it,
+                                        'LR': optimizer.param_groups[0]['lr'],
+                                        'Time/Iter': (time.time()-bef_loop)/self.config.display_progress_every})
+                    bef_loop = time.time()
             self.save_model(np.mean(loss_list[-counter:], axis=0), it, model,optimizer,scaler)
-            return it
+            # test_model(model, writer=writer, step=it, device=device)
+            counter = 0
+        # except Exception as e:
+        #     print(e)
+        # finally:
+        #     save_model(np.mean(loss_list[-counter:], axis=0), it, model,optimizer,scaler)
+        #     return it
 
 

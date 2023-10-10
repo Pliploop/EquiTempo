@@ -62,6 +62,7 @@ class Siamese(nn.Module):
         self.hat = Hat(filters, output_dim)
 
     def forward(self, x):
+        x = x.unsqueeze(-3)
         x = self.batch_norm(x)
 
         x = self.conv1(x)
