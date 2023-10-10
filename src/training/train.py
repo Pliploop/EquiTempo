@@ -88,7 +88,7 @@ class Trainer:
             loss_list = []
             pbar = tqdm(dataloader, desc=f'Epoch {epoch}/{self.config.epochs}', leave=True, total=dataloader_length)
             for batch_i,data in enumerate(pbar):
-                loss = self.train_iteration(data['audio_1'].to(self.config.device),data['audio_2'].to(self.config.device),data['rp_1'],data['rp_2'], model,optimizer,scaler)
+                loss = self.train_iteration(data['audio_1'].to(self.config.device),data['audio_2'].to(self.config.device),data['rp_1'].to(self.config.device),data['rp_2'].to(self.config.device), model,optimizer,scaler)
                 if writer is not None:
                     writer.add_scalar('loss', loss, it)
                     writer.add_scalar('learning_rate', optimizer.param_groups[0]['lr'], it)
