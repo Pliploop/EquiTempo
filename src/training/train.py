@@ -46,7 +46,7 @@ def save_model(loss, it, model, optimizer, scaler):
 def loss_function(c1, c2, alpha1, alpha2, eps=1e-7):
     c_ratio = c1/(c2+eps)
     alpha_ratio = alpha1/(alpha2+eps)
-    return torch.abs(c_ratio-alpha_ratio)
+    return torch.abs(c_ratio-alpha_ratio).mean()
 
 
 def train_iteration(x1, x2, alpha1, alpha2, model, optimizer, scaler):
@@ -84,7 +84,7 @@ def train_loop(dataloader, model, optimizer, scaler, it=0, writer=None):
         loss_list = []
         pbar = tqdm(dataloader, desc=f'Epoch {epoch}/{config.epochs}', leave=True, total=dataloader_length)
         for batch_i,data in enumerate(pbar):
-            loss = train_iteration(data['audio_1'].to(config.device),data['audio_2'].to(config.device),data['rp_1'],data['rp_2'], model,optimizer,scaler)
+            loss = train_iteration(data['audio_1'].to(config.device),data['audio_2'].to(config.device),data['rp_1'].to(config.device),data['rp_2'].to(config.device), model,optimizer,scaler)
             if writer is not None:
                 writer.add_scalar('loss', loss, it)
                 writer.add_scalar('learning_rate', optimizer.param_groups[0]['lr'], it)
