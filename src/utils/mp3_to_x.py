@@ -16,17 +16,16 @@ def convert_folder_to_extension(folder_path, new_folder = None, extension=  'wav
                 try:
                     new_name = name[:-3]+extension
                     if not os.path.exists(os.path.join(folder,new_name)):
-                        print(f"saving {os.path.join(root,name)} to {os.path.join(folder,new_name)}")
-                        # y,sr =  librosa.load(os.path.join(root,name))
-                        # if not os.path.exists(folder):
-                        #     os.makedirs(folder)
-                        # if extension =='wav':
-                        #     scipy.io.wavfile.write(os.path.join(folder,new_name), sr, y)
-                        # if extension == 'npy':
-                        #     np.save(os.path.join(folder,new_name), y)
+                        y,sr =  librosa.load(os.path.join(root,name))
+                        if not os.path.exists(folder):
+                            os.makedirs(folder)
+                        if extension =='wav':
+                            scipy.io.wavfile.write(os.path.join(folder,new_name), sr, y)
+                        if extension == 'npy':
+                            np.save(os.path.join(folder,new_name), y)
                             
-                except:
-                    print(os.path.join(root,name))
+                except Exception as e:
+                    print(e)
                     if delete:
                         os.remove(os.path.join(root,name))
                 
