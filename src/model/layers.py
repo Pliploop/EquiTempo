@@ -12,7 +12,7 @@ class Residual(nn.Module):
         self.conv2 = nn.Conv1d(filters, filters, kernel_size=1, padding=0)
         self.res_conv = nn.Conv1d(channels_in, filters, kernel_size=1, padding=0)
         self.activation = nn.ELU()
-        self.dropout = nn.Dropout2d(dropout_rate)
+        self.dropout = nn.Dropout1d(dropout_rate)
 
     def forward(self, x):
         y = x.clone()
