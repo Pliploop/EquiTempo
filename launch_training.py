@@ -3,17 +3,26 @@ from src.data_loading.datasets import *
 from torch.utils.tensorboard import SummaryWriter
 from config.full import GlobalConfig
 
-import wandb
+import argparse
 
 
-## global config path with args
+
+
 
 if __name__=="__main__":
 
-    ## generate name for experiment
+    parser = argparse.ArgumentParser(description="Process YAML config file")
+
+    # Add an argument to accept the YAML config path
+    parser.add_argument("config_path", type=str, help="Path to the YAML config file", default=None)
+
+    args = parser.parse_args()
 
     ## load config here or instanciate:
     globalconfig = GlobalConfig() ## or from yaml if load path exists
+    if args.config_path is not None:
+        print(f'loading config from {args.config_path}')
+        globalconfig.from_yaml(args.config_path)
 
     trainer = Trainer(global_config=globalconfig)
     model, optimizer, scaler, it = trainer.init_model()

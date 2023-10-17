@@ -11,7 +11,7 @@ class TrainConfig(Config):
         self.dropout_rate = 0.1
         self.output_dim = 300
         self.checkpoint_path = 'checkpoints'
-        self.lr = 0.001
+        self.lr = 0.0005
         self.epochs = 1000
         self.device = 'cuda'
         self.display_progress_every = 1

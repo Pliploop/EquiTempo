@@ -31,7 +31,7 @@ class Trainer:
         total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print(f"Total number of trainable parameters: {total_params}")
         model.train()
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, betas=(0.9, 0.999))
+        optimizer = torch.optim.Adam(model.parameters(), lr=self.config.lr, betas=(0.9, 0.999))
         scaler = torch.cuda.amp.GradScaler(enabled=self.config.mixed_precision)
         it = 0
         if path is not None:
@@ -55,6 +55,8 @@ class Trainer:
                 }, self.config.save_path+f'/model_{self.wandb_run_name}_loss_{str(loss)[:6]}_it_{it}.pt')
 
     def save_config(self):
+        if not os.path.exists(self.config.save_path):
+            os.makedirs(self.config.save_path)
         self.global_config.save(self.config.save_path+f'/model_{self.wandb_run_name}.yml')
 
 
@@ -105,7 +107,7 @@ class Trainer:
                     if writer is not None:
                         writer.add_scalar('loss', loss, it)
                         writer.add_scalar('learning_rate', optimizer.param_groups[0]['lr'], it)
-                    if self.wandb_run is not None:
+                    if self.wandb_run is not None and it%10==0:
                         self.wandb_run.log({
                             "loss" : loss,
                             "learning_rate": optimizer.param_groups[0]['lr']
