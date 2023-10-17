@@ -111,7 +111,7 @@ class Trainer:
                         self.wandb_run.log({
                             "loss" : loss,
                             "learning_rate": optimizer.param_groups[0]['lr']
-                        })
+                        }, step = it)
                     loss_list.append(loss)
                     counter += 1
                     it += 1
