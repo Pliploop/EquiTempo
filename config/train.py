@@ -16,6 +16,7 @@ class TrainConfig(Config):
         self.device = 'cuda'
         self.display_progress_every = 1
         self.warmup = False
+        self.log_wandb = True
 
         self.exp_name = f'filters_{self.filters}_do_{self.dropout_rate}_od_{self.output_dim}'
         self.save_path = f'{self.checkpoint_path}/{self.exp_name}'

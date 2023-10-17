@@ -9,13 +9,21 @@ from config.train import TrainConfig
 from src.model.model import Siamese
 from tqdm import tqdm
 
+import wandb
+
 
 class Trainer:
 
     def __init__(self, global_config = GlobalConfig()) -> None:
+        self.global_config = global_config
         self.config = TrainConfig(dict = global_config.train_config)
         self.dataset_config = MTATConfig(dict = global_config.MTAT_config)
-            
+        if self.config.log_wandb:
+            self.wandb_run = wandb.init(project="EquiTempo", config=global_config.to_dict())
+            self.wandb_run_name = self.wandb_run.name
+        else:
+            self.wandb_run = None
+            self.wandb_run_name = ""
 
     def init_model(self,path=None, test=False):
         device = self.config.device
@@ -44,7 +52,10 @@ class Trainer:
                 'scaler_state_dict': scaler.state_dict(),
                 'loss': loss,
                 'it': it,
-                }, self.config.save_path+f'/model_loss_{str(loss)[:6]}_it_{it}.pt')
+                }, self.config.save_path+f'/model_{self.wandb_run_name}_loss_{str(loss)[:6]}_it_{it}.pt')
+
+    def save_config(self):
+        self.global_config.save(self.config.save_path+f'/model_{self.wandb_run_name}.yml')
 
 
     def loss_function(self, c1, c2, alpha1, alpha2, eps=1e-7):
@@ -71,6 +82,7 @@ class Trainer:
 
 
     def train_loop(self, dataloader, model, optimizer, scaler, it=0, writer=None):
+        self.save_config()
         dataloader_length = len(dataloader)
         if self.config.warmup:
             self.update_lr(1e-7, optimizer)
@@ -93,6 +105,11 @@ class Trainer:
                     if writer is not None:
                         writer.add_scalar('loss', loss, it)
                         writer.add_scalar('learning_rate', optimizer.param_groups[0]['lr'], it)
+                    if self.wandb_run is not None:
+                        self.wandb_run.log({
+                            "loss" : loss,
+                            "learning_rate": optimizer.param_groups[0]['lr']
+                        })
                     loss_list.append(loss)
                     counter += 1
                     it += 1
