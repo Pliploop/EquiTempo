@@ -14,7 +14,7 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser(description="Process YAML config file")
 
     # Add an argument to accept the YAML config path
-    parser.add_argument("config_path", type=str, help="Path to the YAML config file", default=None)
+    parser.add_argument("--config_path", required=False, type=str, help="Path to the YAML config file", default=None)
 
     args = parser.parse_args()
 
