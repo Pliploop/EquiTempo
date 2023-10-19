@@ -1,7 +1,7 @@
 from config.template import Config
 
 
-class FinetuneConfig(Config):
+class FinetuningConfig(Config):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
@@ -11,4 +11,4 @@ class FinetuneConfig(Config):
         self.epochs = 100
         self.device = "cuda"
         # this can be overriden by command line args
-        self.dataset_list = ["gtzan", "giantsteps", "hainsworth"]
+        self.dataset_name_list = ["gtzan", "giantsteps", "hainsworth"]

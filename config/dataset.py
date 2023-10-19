@@ -11,7 +11,28 @@ class MTATConfig(Config):
         self.extension = "wav"
 
 
-class FinetuneDatasetConfig(Config):
+class FinetuningDatasetConfig(Config):
+    def __init__(self, *args, **kwards) -> None:
+        super().__init__(*args, **kwards)
+
+        self.audio_dirs = {
+            "gtzan": "data/gtzan",
+            "hainsworth": "data/hainsworth",
+            "giantsteps": "data/giantsteps",
+            "acm_mirum": "data/acm_mirum",
+        }
+        self.annotation_dirs = {
+            "gtzan": "data/gtzan_tempo.csv",
+            "hainsworth": "data/hainsworth_tempo.csv",
+            "giantsteps": "data/giantsteps_tempo.csv",
+            "acm_mirum": "data/acm_mirum_tempo.csv",
+        }
+
+        self.batch_size = 16
+        self.extension = "wav"
+
+
+class EvaluationDatasetConfig(Config):
     def __init__(self, *args, **kwards) -> None:
         super().__init__(*args, **kwards)
 
