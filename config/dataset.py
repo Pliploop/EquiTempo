@@ -11,7 +11,7 @@ class MTATConfig(Config):
         self.extension = "wav"
 
 
-class FineTuneConfig(Config):
+class FinetuneDatasetConfig(Config):
     def __init__(self, *args, **kwards) -> None:
         super().__init__(*args, **kwards)
 

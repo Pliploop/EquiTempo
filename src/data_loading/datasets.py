@@ -5,16 +5,14 @@ import numpy as np
 import pandas as pd
 import torch
 import soundfile as sf
-import torchaudio
 import soxr
-import torchaudio.functional as F
 import torchaudio.transforms as T
-from config.dataset import MTATConfig, FineTuneConfig
+from config.dataset import MTATConfig, FinetuneDatasetConfig
 from config.preprocessing import PreprocessingConfig
 from config.full import GlobalConfig
 from torch.utils.data import DataLoader, Dataset
 import librosa
-from src.data_loading.preprocessing import *
+from src.data_loading.preprocessing import pad_or_truncate, power2db
 
 
 class MTATDataset(Dataset):
@@ -109,12 +107,13 @@ class MTATDataset(Dataset):
         return DataLoader(dataset=self, batch_size=self.config.batch_size, shuffle=True)
 
 
-class FineTuneDataset(Dataset):
-    def __init__(self, dataset_list: list, global_config=GlobalConfig()):
-        self.config = FineTuneConfig(dict=global_config.finetune_config)
+class FinetuneDataset(Dataset):
+    def __init__(self, dataset_list: list, stretch: bool, global_config=GlobalConfig()):
+        self.config = FinetuneDatasetConfig(dict=global_config.finetune_dataset_config)
         self.preprocessing_config = PreprocessingConfig(
             dict=global_config.preprocessing_config
         )
+        self.stretch = stretch
         self.extension = self.config.extension
         self.audio_dirs = [
             self.config.audio_dirs[dataset_name] for dataset_name in dataset_list
@@ -171,9 +170,7 @@ class FineTuneDataset(Dataset):
 
         len_audio_n = self.preprocessing_config.len_audio_n
         len_audio_n_dataset = self.preprocessing_config.len_audio_n_dataset
-        if (
-            self.extension == "mp3" or self.extension == "wav"
-        ):  ### rewrite better for wav
+        if self.extension == "mp3" or self.extension == "wav":  # rewrite better for wav
             info = sf.info(audio_path)
             if self.extension == "mp3":
                 length = info.frames - self.preprocessing_config.pad_mp3
@@ -197,8 +194,11 @@ class FineTuneDataset(Dataset):
             audio = soxr.resample(audio, samplerate, self.preprocessing_config.sr)
 
         # time stretching
-        rf = random.choice(self.preprocessing_config.rf)
-        audio = librosa.effects.time_stretch(audio, rate=rf)
+        if self.stretch:
+            rf = random.choice(self.preprocessing_config.rf)
+            audio = librosa.effects.time_stretch(audio, rate=rf)
+        else:
+            rf = 1
 
         # cropping or padding
         audio = pad_or_truncate(torch.from_numpy(audio), len_audio_n)
