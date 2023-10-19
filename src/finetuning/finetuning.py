@@ -42,7 +42,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=config.lr)
 loss_function = nn.CrossEntropyLoss()
 torch.optim.Adam(model.head.parameters(), lr=config.lr)
 
-dataset = FinetuneDataset()
+dataset = FinetuneDataset(dataset_list=dataset_list, stretch=True)
 dataloader = dataset.create_dataloader()
 
 for epoch in range(config.epochs):
