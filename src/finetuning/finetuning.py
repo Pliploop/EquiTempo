@@ -10,7 +10,7 @@ from src.model.model import Siamese
 
 config = FinetuningConfig(dict=GlobalConfig().finetuning_config)
 
-# argument parser argparse
+# argument parser
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_name_list", nargs="+", default=None, required=False)
 parser.add_argument("--model_name", required=True)
