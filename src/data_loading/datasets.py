@@ -233,7 +233,7 @@ class EvaluationDataset(Dataset):
         )
         self.stretch = stretch
         self.extension = self.config.extension
-        self.audio_dir = self.config.audio_dir
+        self.audio_dir = self.config.audio_dirs[dataset_name]
         self.annotations = pd.read_csv(
             self.config.annotation_dirs[dataset_name], sep=","
         )
