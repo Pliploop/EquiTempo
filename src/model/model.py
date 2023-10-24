@@ -43,7 +43,7 @@ class Hat(nn.Module): # this is called Hat because it is used on top of the Head
         self.regression = nn.Linear(channels_in, 1)
 
     def forward(self,x):
-        return self.classification(x), self.regression(x)
+        return self.classification(x.detach()), self.regression(x)
 
 
 class Siamese(nn.Module):
