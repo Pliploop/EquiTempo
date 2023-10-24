@@ -11,5 +11,13 @@ class MTATConfig(Config):
         self.num_workers = 16
         self.extension = 'wav'
 
+
+        self.augment = True
+        self.polarity_aug_chance = 0.2
+        self.gain_aug_chance = 0.2
+        self.gaussian_noise_aug_chance = 0.2
+        self.specaugment_aug_chance = 0.2
+        self.reverb_aug_chance = 0.2
+        self.filter_aug_chance = 0.3
         
     
