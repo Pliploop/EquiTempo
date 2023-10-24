@@ -15,3 +15,5 @@ def power2db(S, amin=1e-10, top_db=80.0):
     if top_db is not None:
         log_spec = torch.maximum(log_spec, torch.amax(log_spec, (-2,-1), keepdim=True) - top_db)
     return log_spec
+
+
