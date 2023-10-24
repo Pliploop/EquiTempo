@@ -17,7 +17,7 @@ class Trainer:
         self.dataset_config = MTATConfig(dict = global_config.MTAT_config)
             
 
-    def init_model(self,path=None, test=False):
+    def init_model(self, path=None, test=False):
         device = self.config.device
         model = Siamese(filters=self.config.filters, dilations=self.config.dilations, dropout_rate=self.config.dropout_rate, output_dim=self.config.output_dim).to(device)
         total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
