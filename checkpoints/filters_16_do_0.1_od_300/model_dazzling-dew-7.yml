@@ -1,0 +1,42 @@
+MTAT_config:
+  annotations_path: data/MTAT_annotations.csv
+  batch_size: 16
+  dir_path: /import/research_c4dm/JulienMarcoChrisRMRI/MTAT_wav
+  extension: wav
+  num_workers: 16
+preprocessing_config:
+  dataset_sr: 16000
+  len_audio_n: 599760
+  len_audio_n_dataset: 217600
+  len_audio_s: 13.6
+  pad_mp3: 8192
+  rp: 0.1
+  rp_range:
+  - 0.9
+  - 1.1
+  sr: 44100
+train_config:
+  checkpoint_path: checkpoints
+  device: cuda
+  dilations:
+  - 1
+  - 2
+  - 4
+  - 8
+  - 16
+  - 32
+  - 64
+  - 128
+  - 256
+  - 512
+  display_progress_every: 1
+  dropout_rate: 0.1
+  epochs: 1000
+  exp_name: filters_16_do_0.1_od_300
+  filters: 16
+  log_wandb: true
+  lr: 0.0005
+  mixed_precision: true
+  output_dim: 300
+  save_path: checkpoints/filters_16_do_0.1_od_300
+  warmup: false
