@@ -1,0 +1,11 @@
+einops==0.7.0
+julius==0.2.7
+librosa==0.10.1
+numpy==1.25.2
+pandas==2.1.1
+PyYAML==6.0.1
+PyYAML==6.0.1
+scipy==1.11.3
+soundfile==0.12.1
+soxr==0.3.7
+tqdm==4.66.1

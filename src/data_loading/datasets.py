@@ -123,9 +123,7 @@ class FinetuningDataset(Dataset):
         )
         self.stretch = stretch
         self.extension = self.config.extension
-        self.audio_dirs = [
-            self.config.audio_dirs[dataset_name] for dataset_name in dataset_name_list
-        ]
+        self.audio_dirs = self.config.audio_dirs
         self.annotations = {
             dataset_name: pd.read_csv(
                 self.config.annotation_dirs[dataset_name], sep=","
@@ -138,20 +136,22 @@ class FinetuningDataset(Dataset):
         # create an audio_path column depending on dataset structure
         for dataset_name in dataset_name_list:
             if dataset_name == "gtzan":
-                self.annotations[dataset_name]["audio_path"] = (
-                    "gtzan/"
-                    + self.annotations[dataset_name]["name"][:3]
-                    + "/"
-                    + self.annotations[dataset_name]["name"]
-                    + "."
-                    + self.config.extension
+                self.annotations[dataset_name]["audio_path"] = self.annotations[
+                    dataset_name
+                ]["name"].apply(
+                    lambda x: os.path.join(
+                        self.audio_dirs["gtzan"],
+                        x.split(".")[0],
+                        x + "." + self.config.extension,
+                    )
                 )
             elif dataset_name == "giantsteps":
-                self.annotations[dataset_name]["audio_path"] = (
-                    "giantsteps/"
-                    + self.annotations[dataset_name]["name"]
-                    + "."
-                    + self.config.extension
+                self.annotations[dataset_name]["audio_path"] = self.annotations[
+                    dataset_name
+                ]["name"].apply(
+                    lambda x: os.path.join(
+                        self.audio_dirs["giantsteps"], x + "." + self.config.extension
+                    )
                 )
 
         # concatente to one dataframe
@@ -178,7 +178,9 @@ class FinetuningDataset(Dataset):
 
         len_audio_n = self.preprocessing_config.len_audio_n
         len_audio_n_dataset = self.preprocessing_config.len_audio_n_dataset
-        if self.extension == "mp3" or self.extension == "wav":  # rewrite better for wav
+        if (
+            self.extension == "mp3" or self.extension == "wav" or self.extension == "au"
+        ):  # rewrite better for wav
             info = sf.info(audio_path)
             if self.extension == "mp3":
                 length = info.frames - self.preprocessing_config.pad_mp3
@@ -233,7 +235,7 @@ class EvaluationDataset(Dataset):
         )
         self.stretch = stretch
         self.extension = self.config.extension
-        self.audio_dir = self.config.audio_dirs[dataset_name]
+        self.audio_dirs = self.config.audio_dirs
         self.annotations = pd.read_csv(
             self.config.annotation_dirs[dataset_name], sep=","
         )
@@ -242,20 +244,22 @@ class EvaluationDataset(Dataset):
 
         # create an audio_path column depending on dataset structure
         if dataset_name == "gtzan":
-            self.annotations[dataset_name]["audio_path"] = (
-                "gtzan/"
-                + self.annotations[dataset_name]["name"][:3]
-                + "/"
-                + self.annotations[dataset_name]["name"]
-                + "."
-                + self.config.extension
+            self.annotations["audio_path"] = self.annotations[dataset_name][
+                "name"
+            ].apply(
+                lambda x: os.path.join(
+                    self.audio_dirs["gtzan"],
+                    x.split(".")[0],
+                    x + "." + self.config.extension,
+                )
             )
         elif dataset_name == "giantsteps":
-            self.annotations[dataset_name]["audio_path"] = (
-                "giantsteps/"
-                + self.annotations[dataset_name]["name"]
-                + "."
-                + self.config.extension
+            self.annotations["audio_path"] = self.annotations[dataset_name][
+                "name"
+            ].apply(
+                lambda x: os.path.join(
+                    self.audio_dirs["giantsteps"], x + "." + self.config.extension
+                )
             )
 
         self.melgram = T.MelSpectrogram(

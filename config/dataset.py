@@ -16,10 +16,10 @@ class FinetuningDatasetConfig(Config):
         super().__init__(*args, **kwards)
 
         self.audio_dirs = {
-            "gtzan": "data/gtzan",
-            "hainsworth": "data/hainsworth",
-            "giantsteps": "data/giantsteps",
-            "acm_mirum": "data/acm_mirum",
+            "gtzan": "../gtzan",
+            "hainsworth": "../hainsworth",
+            "giantsteps": "../giantsteps",
+            "acm_mirum": "../acm_mirum",
         }
         self.annotation_dirs = {
             "gtzan": "data/gtzan_tempo.csv",

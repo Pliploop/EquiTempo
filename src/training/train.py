@@ -32,7 +32,7 @@ class Trainer:
         it = 0
         if path is not None:
             checkpoint = torch.load(path)
-            model.load_state_dict(checkpoint["model_state_dict"], strict=False)
+            model.load_state_dict(checkpoint["gen_state_dict"], strict=False)
             optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
             it = checkpoint["it"]
         if test:
