@@ -3,11 +3,12 @@ import time
 
 import numpy as np
 import torch
+from tqdm import tqdm
+
 from config.dataset import MTATConfig
 from config.full import GlobalConfig
 from config.train import TrainConfig
 from src.model.model import Siamese
-from tqdm import tqdm
 
 
 class Trainer:

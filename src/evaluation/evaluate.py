@@ -9,8 +9,8 @@ import torch
 from config.evaluate import EvaluationConfig
 from config.full import GlobalConfig
 from src.data_loading.datasets import EvaluationDataset
-from src.evaluate.metrics import accuracy_1, accuracy_2
-from src.model.model import Siamese
+from src.evaluation.metrics import accuracy_1, accuracy_2
+from src.training.train import Trainer
 
 config = EvaluationConfig(dict=GlobalConfig().evaluation_config)
 
@@ -33,8 +33,8 @@ if model_name[-3:] != ".pt":
     model_name += ".pt"
 
 model_path = config.checkpoint_path + "/" + model_name
-model = Siamese()
-model.load_state_dict(torch.load(model_path))
+model_path = config.checkpoint_path + "/" + model_name
+model, optimizer, scaler, it = Trainer().init_model(model_path)
 
 model.eval()
 
