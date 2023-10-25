@@ -205,7 +205,8 @@ class FinetuningDataset(Dataset):
 
         # time stretching
         if self.stretch:
-            rf = random.choice(self.preprocessing_config.rf)
+            rf_range = self.preprocessing_config.rf_range
+            rf = np.random.uniform(rf_range[0], rf_range[1])
             audio = librosa.effects.time_stretch(audio, rate=rf)
         else:
             rf = 1

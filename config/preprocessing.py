@@ -13,4 +13,5 @@ class PreprocessingConfig(Config):
         # self.len_audio_n = 600000
         self.rp = 0.1
         self.rp_range = [1 - self.rp, 1 + self.rp]
-        self.rf = [-0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4]
+        self.rf = 0.2
+        self.rf_range = [1 - self.rf, 1 + self.rf]
