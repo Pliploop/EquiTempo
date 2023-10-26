@@ -32,6 +32,7 @@ def finetune(model_name, dataset_name_list=None):
     for param in model.hat.parameters():
         param.requires_grad = True
 
+    model.float()
     model.train()
 
     # optimizer = torch.optim.Adam(model.parameters(), lr=config.lr)
@@ -48,10 +49,10 @@ def finetune(model_name, dataset_name_list=None):
             # this currently restricts inference up to and including
             # the head to 1 batch...
             audio = item_dict["audio"].to(device)
-            tempo = item_dict["tempo"].to(device)
-            rf = item_dict["rf"].to(device)
-            outputs = model(audio)
-            loss = loss_function(outputs, tempo * rf)
+            tempo = item_dict["tempo"].type(torch.LongTensor).to(device)
+            rf = item_dict["rf"].type(torch.LongTensor).to(device)
+            classification_out, regression_out = model(audio)
+            loss = loss_function(classification_out, tempo * rf)
             loss.backward()
             optimizer.step()
 
