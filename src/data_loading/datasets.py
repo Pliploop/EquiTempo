@@ -178,9 +178,7 @@ class FinetuningDataset(Dataset):
 
         len_audio_n = self.preprocessing_config.len_audio_n
         len_audio_n_dataset = self.preprocessing_config.len_audio_n_dataset
-        if (
-            self.extension == "mp3" or self.extension == "wav" or self.extension == "au"
-        ):  # rewrite better for wav
+        if self.extension == "mp3" or self.extension == "wav":
             info = sf.info(audio_path)
             if self.extension == "mp3":
                 length = info.frames - self.preprocessing_config.pad_mp3
@@ -209,7 +207,7 @@ class FinetuningDataset(Dataset):
             rf = np.random.uniform(rf_range[0], rf_range[1])
             audio = librosa.effects.time_stretch(audio, rate=rf)
         else:
-            rf = 1
+            rf = 1.0
 
         # cropping or padding
         audio = pad_or_truncate(torch.from_numpy(audio), len_audio_n)
@@ -282,7 +280,7 @@ class EvaluationDataset(Dataset):
 
         len_audio_n = self.preprocessing_config.len_audio_n
         len_audio_n_dataset = self.preprocessing_config.len_audio_n_dataset
-        if self.extension == "mp3" or self.extension == "wav":  # rewrite better for wav
+        if self.extension == "mp3" or self.extension == "wav":
             info = sf.info(audio_path)
             if self.extension == "mp3":
                 length = info.frames - self.preprocessing_config.pad_mp3
@@ -307,10 +305,11 @@ class EvaluationDataset(Dataset):
 
         # time stretching
         if self.stretch:
-            rf = random.choice(self.preprocessing_config.rf)
+            rf_range = self.preprocessing_config.rf_range
+            rf = np.random.uniform(rf_range[0], rf_range[1])
             audio = librosa.effects.time_stretch(audio, rate=rf)
         else:
-            rf = 1
+            rf = 1.0
 
         # cropping or padding
         audio = pad_or_truncate(torch.from_numpy(audio), len_audio_n)

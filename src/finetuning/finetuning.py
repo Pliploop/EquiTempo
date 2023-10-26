@@ -44,14 +44,14 @@ def finetune(model_name, dataset_name_list=None):
     dataloader = dataset.create_dataloader()
 
     for epoch in range(config.epochs):
-        for i, item_dict in enumerate(dataloader):
+        for item_dict in dataloader:
             optimizer.zero_grad()
             # this currently restricts inference up to and including
             # the head to 1 batch...
             audio = item_dict["audio"].to(device)
-            tempo = item_dict["tempo"].type(torch.LongTensor).to(device)
-            rf = item_dict["rf"].type(torch.LongTensor).to(device)
-            classification_out, regression_out = model(audio)
+            tempo = item_dict["tempo"].to(device)
+            rf = item_dict["rf"].to(device)
+            classification_out, _ = model(audio)
             loss = loss_function(classification_out, tempo * rf)
             loss.backward()
             optimizer.step()
@@ -62,7 +62,7 @@ def finetune(model_name, dataset_name_list=None):
     datasets_initials = "".join(
         [dataset_name[:1] for dataset_name in dataset_name_list]
     )
-    ft_model_path = model_path.replace(".pt", "{dataset_initials}.pt")
+    ft_model_path = model_path.replace(".pt", f"{datasets_initials}.pt")
 
     torch.save(model.state_dict(), ft_model_path)
 

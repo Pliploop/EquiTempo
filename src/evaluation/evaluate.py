@@ -48,7 +48,7 @@ with torch.no_grad():
         audio = item_dict["audio"].to(device)
         tempo = item_dict["tempo"]
         rf = item_dict["rf"]
-        classification_pred, regression_pred = model(audio)
+        classification_pred, _ = model(audio)
         preds.append(classification_pred)
         truths.append(tempo * rf)
 
@@ -74,5 +74,5 @@ results = {
 print(f"Accuracy 1: {accuracy_1}")
 print(f"Accuracy 2: {accuracy_2}")
 
-with open("{experiment_dir}/results.json", "w") as f:
+with open(f"{experiment_dir}/results.json", "w") as f:
     json.dump(results, f)
