@@ -8,4 +8,6 @@ PyYAML==6.0.1
 scipy==1.11.3
 soundfile==0.12.1
 soxr==0.3.7
+torch==2.1.0+cu118
+torchaudio==2.1.0+cu118
 tqdm==4.66.1

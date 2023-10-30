@@ -100,6 +100,7 @@ class Siamese(nn.Module):
         x = self.conv3(x)
         x = self.activation(x)
         x = self.dropout(x)
+        
 
         x = torch.squeeze(x, -2)
         x, skip = self.tcn(x)

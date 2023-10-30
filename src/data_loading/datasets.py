@@ -10,10 +10,14 @@ import torch
 import torchaudio.transforms as T
 from torch.utils.data import DataLoader, Dataset
 
+from src.data_loading.augmentations import *
+from src.data_loading.preprocessing import *
+
 from config.dataset import EvaluationDatasetConfig, FinetuningDatasetConfig, MTATConfig
 from config.full import GlobalConfig
 from config.preprocessing import PreprocessingConfig
 from src.data_loading.preprocessing import pad_or_truncate, power2db
+
 
 
 class MTATDataset(Dataset):
@@ -32,6 +36,8 @@ class MTATDataset(Dataset):
         self.run_annotations_check()
 
         self.train = train
+
+        self.augment = self.config.augment
         self.melgram = T.MelSpectrogram(
             sample_rate=44100,
             f_min=30,
@@ -42,6 +48,20 @@ class MTATDataset(Dataset):
             hop_length=441,
             power=2,
         )
+        self.sr = self.preprocessing_config.sr
+
+        ## Move to config?
+        self.audio_transforms = Compose([
+            RandomApply([PolarityInversion()], p=self.config.polarity_aug_chance),
+            RandomApply([Noise(min_snr=0.001, max_snr=0.005)], p=self.config.gaussian_noise_aug_chance),
+            RandomApply([Gain()], p=self.config.gain_aug_chance),
+            RandomApply([HighLowPass(sample_rate=self.sr)], p = self.config.filter_aug_chance)
+        ])
+
+        self.spectrogram_transforms = Compose([
+            RandomApply([T.TimeMasking(time_mask_param=80)],p=self.config.specaugment_aug_chance),
+            RandomApply([T.FrequencyMasking(freq_mask_param=80)],p=self.config.specaugment_aug_chance)
+        ])
 
     def run_annotations_check(self):
         mask = (self.audio_dir + "/" + self.annotations.file_path).apply(
@@ -85,27 +105,40 @@ class MTATDataset(Dataset):
 
         ## stretching
         rp_range = self.preprocessing_config.rp_range
-        rp_1 = np.random.uniform(rp_range[0], rp_range[1])
-        rp_2 = np.random.uniform(rp_range[0], rp_range[1])
 
-        audio_1 = librosa.effects.time_stretch(audio, rate=rp_1)
-        audio_2 = librosa.effects.time_stretch(audio, rate=rp_2)
+        rp_1 = np.random.uniform(rp_range[0],rp_range[1])
+        rp_2 = np.random.uniform(rp_range[0],rp_range[1])
+
+        audio_1 = librosa.effects.time_stretch(audio,rate=rp_1)
+        audio_2 = librosa.effects.time_stretch(audio,rate=rp_2)
 
         ## cropping or padding
         audio_1 = pad_or_truncate(torch.from_numpy(audio_1), len_audio_n)
         audio_2 = pad_or_truncate(torch.from_numpy(audio_2), len_audio_n)
 
         ## Augmentations
+        if self.train and self.augment:
+            audio_1 = self.audio_transforms.transform(audio_1)
+            audio_2 = self.audio_transforms.transform(audio_2)
+
+        mel1 = self.melgram(audio_1)
+        mel2 = self.melgram(audio_2)
+
+        if self.train and self.augment :
+            mel1 = self.spectrogram_transforms.transform(mel1)
+            mel2 = self.spectrogram_transforms.transform(mel2)    
+
+        mel1 = power2db(mel1)  
+        mel2 = power2db(mel2)  
 
         return {
-            "audio_1": power2db(self.melgram(audio_1)),
-            "audio_2": power2db(self.melgram(audio_2)),
-            "rp_1": rp_1,
-            "rp_2": rp_2,
-        }
+            "audio_1" : mel1,
+            "audio_2" : mel2,
+            "rp_1" : rp_1,
+            "rp_2" : rp_2}
 
     def create_dataloader(self):
-        return DataLoader(dataset=self, batch_size=self.config.batch_size, shuffle=True)
+        return DataLoader(dataset=self,batch_size=self.config.batch_size, shuffle=True, num_workers=self.config.num_workers, drop_last=True)
 
 
 class FinetuningDataset(Dataset):
