@@ -59,7 +59,7 @@ class Hat(
         self.regression = nn.Linear(channels_in, 1)
 
     def forward(self, x):
-        return self.classification(x), self.regression(x)
+        return self.classification(x.detach()), self.regression(x)
 
 
 class Siamese(nn.Module):

@@ -3,6 +3,7 @@ import sys
 
 import torch
 import torch.nn as nn
+from tqdm import tqdm
 
 from config.finetune import FinetuningConfig
 from config.full import GlobalConfig
@@ -30,28 +31,34 @@ def finetune(model_name, dataset_name_list=None):
 
     loss_function = nn.CrossEntropyLoss()
 
-    dataset = FinetuningDataset(dataset_name_list=dataset_name_list, stretch=False)
+    dataset = FinetuningDataset(dataset_name_list=dataset_name_list, stretch=True)
     dataloader = dataset.create_dataloader()
-    print(len(dataloader))
 
     for epoch in range(config.epochs):
-        for item_dict in dataloader:
+        progress_bar = tqdm(
+            dataloader, desc=f"Epoch {epoch+1}/{config.epochs}", leave=False
+        )
+        for item_dict in progress_bar:
             optimizer.zero_grad()
+
             audio = item_dict["audio"].to(device)
-            # round and convert tempos to int
             tempo = item_dict["tempo"].to(device)
             rf = item_dict["rf"].to(device)
+            # round and convert tempos to int
             final_tempos = torch.round(tempo * rf).long()
+
             classification_out, _ = model(audio)
             loss = loss_function(classification_out, final_tempos)
             loss.backward()
             optimizer.step()
 
+            progress_bar.set_postfix(loss=loss.item())
+
         print(f"Epoch {epoch+1}/{100}, Loss: {loss.item():.4f}")
 
     # save in the same dir, add initials of datasets used
-    datasets_initials = "".join(
-        [dataset_name[:1] for dataset_name in dataset_name_list]
+    datasets_initials = "_".join(
+        [dataset_name[:3] for dataset_name in dataset_name_list]
     )
     # make uppercase
     datasets_initials = datasets_initials.upper()

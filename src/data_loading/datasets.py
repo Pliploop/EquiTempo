@@ -159,6 +159,15 @@ class FinetuningDataset(Dataset):
             [self.annotations[dataset_name] for dataset_name in dataset_name_list]
         )
 
+        if stretch:
+            # drop all tracks whose tempo times min(rf_range) is greater than 300 bpm
+            rf_range = self.preprocessing_config.rf_range
+            self.annotations = self.annotations[
+                self.annotations["tempo"] * rf_range[0] <= 300
+            ]
+        else:
+            self.annotations = self.annotations[self.annotations["tempo"] <= 300]
+
         # print number of tracks
         print(f"Number of tracks for finetuning: {len(self.annotations)}")
 
@@ -174,7 +183,7 @@ class FinetuningDataset(Dataset):
         )
 
     def __len__(self):
-        return sum([len(annotation) for annotation in self.annotations])
+        return len(self.annotations)
 
     def __getitem__(self, idx):
         audio_path = self.annotations.iloc[idx]["audio_path"]
@@ -208,6 +217,9 @@ class FinetuningDataset(Dataset):
         if self.stretch:
             rf_range = self.preprocessing_config.rf_range
             rf = np.random.uniform(rf_range[0], rf_range[1])
+            # make sure it doesn't exceed 300 bpm
+            while rf > 300 / self.annotations.iloc[idx]["tempo"]:
+                rf = np.random.uniform(rf_range[0], rf_range[1])
             audio = librosa.effects.time_stretch(audio, rate=rf)
         else:
             rf = 1.0
@@ -241,14 +253,12 @@ class EvaluationDataset(Dataset):
         self.annotations = pd.read_csv(
             self.config.annotation_dirs[dataset_name], sep=","
         )
-        for df in self.annotations.values():
-            df["tempo"] = df["tempo"].apply(float)
+
+        self.annotations["tempo"] = self.annotations["tempo"].apply(float)
 
         # create an audio_path column depending on dataset structure
         if dataset_name == "gtzan":
-            self.annotations["audio_path"] = self.annotations[dataset_name][
-                "name"
-            ].apply(
+            self.annotations["audio_path"] = self.annotations["name"].apply(
                 lambda x: os.path.join(
                     self.audio_dirs["gtzan"],
                     x.split(".")[0],
@@ -256,13 +266,20 @@ class EvaluationDataset(Dataset):
                 )
             )
         elif dataset_name == "giantsteps":
-            self.annotations["audio_path"] = self.annotations[dataset_name][
-                "name"
-            ].apply(
+            self.annotations["audio_path"] = self.annotations["name"].apply(
                 lambda x: os.path.join(
                     self.audio_dirs["giantsteps"], x + "." + self.config.extension
                 )
             )
+
+        if stretch:
+            # drop all tracks whose tempo times min(rf_range) is greater than 300 bpm
+            rf_range = self.preprocessing_config.rf_range
+            self.annotations = self.annotations[
+                self.annotations["tempo"] * rf_range[0] <= 300
+            ]
+        else:
+            self.annotations = self.annotations[self.annotations["tempo"] <= 300]
 
         self.melgram = T.MelSpectrogram(
             sample_rate=44100,
@@ -276,7 +293,7 @@ class EvaluationDataset(Dataset):
         )
 
     def __len__(self):
-        return sum([len(annotation) for annotation in self.annotations])
+        return len(self.annotations)
 
     def __getitem__(self, idx):
         audio_path = self.annotations.iloc[idx]["audio_path"]

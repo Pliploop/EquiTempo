@@ -1,7 +1,7 @@
 """Metrics for tempo estimation evaluation."""
 
 
-def accuracy_1(truths: list, preds: list, tol: float = 0.04):
+def compute_accuracy_1(truths: list, preds: list, tol: float = 0.04):
     """Calculate accuracy within a certain tolerance (percentage)."""
     results = [0] * len(truths)
     for i, (truth, pred) in enumerate(zip(truths, preds)):
@@ -12,7 +12,7 @@ def accuracy_1(truths: list, preds: list, tol: float = 0.04):
     return accuracy, results
 
 
-def accuracy_2(
+def compute_accuracy_2(
     truths: list,
     preds: list,
     tol: float = 0.04,
