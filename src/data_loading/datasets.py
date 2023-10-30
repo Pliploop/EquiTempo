@@ -159,6 +159,9 @@ class FinetuningDataset(Dataset):
             [self.annotations[dataset_name] for dataset_name in dataset_name_list]
         )
 
+        # print number of tracks
+        print(f"Number of tracks for finetuning: {len(self.annotations)}")
+
         self.melgram = T.MelSpectrogram(
             sample_rate=44100,
             f_min=30,

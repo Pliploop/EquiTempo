@@ -26,33 +26,24 @@ def finetune(model_name, dataset_name_list=None):
     model_path = config.checkpoint_path + "/" + model_name
     model, optimizer, scaler, it = Trainer().init_model(model_path)
 
-    # freeze up to head, so that only hat is trained
-    for param in model.parameters():
-        param.requires_grad = False
-    for param in model.hat.parameters():
-        param.requires_grad = True
-
-    model.float()
     model.train()
 
-    # optimizer = torch.optim.Adam(model.parameters(), lr=config.lr)
-
     loss_function = nn.CrossEntropyLoss()
-    torch.optim.Adam(model.head.parameters(), lr=config.lr)
 
-    dataset = FinetuningDataset(dataset_name_list=dataset_name_list, stretch=True)
+    dataset = FinetuningDataset(dataset_name_list=dataset_name_list, stretch=False)
     dataloader = dataset.create_dataloader()
+    print(len(dataloader))
 
     for epoch in range(config.epochs):
         for item_dict in dataloader:
             optimizer.zero_grad()
-            # this currently restricts inference up to and including
-            # the head to 1 batch...
             audio = item_dict["audio"].to(device)
+            # round and convert tempos to int
             tempo = item_dict["tempo"].to(device)
             rf = item_dict["rf"].to(device)
+            final_tempos = torch.round(tempo * rf).long()
             classification_out, _ = model(audio)
-            loss = loss_function(classification_out, tempo * rf)
+            loss = loss_function(classification_out, final_tempos)
             loss.backward()
             optimizer.step()
 
@@ -62,7 +53,9 @@ def finetune(model_name, dataset_name_list=None):
     datasets_initials = "".join(
         [dataset_name[:1] for dataset_name in dataset_name_list]
     )
-    ft_model_path = model_path.replace(".pt", f"{datasets_initials}.pt")
+    # make uppercase
+    datasets_initials = datasets_initials.upper()
+    ft_model_path = model_path.replace(".pt", f"_{datasets_initials}.pt")
 
     torch.save(model.state_dict(), ft_model_path)
 
