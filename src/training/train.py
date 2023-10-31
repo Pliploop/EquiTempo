@@ -3,16 +3,20 @@ import time
 
 import numpy as np
 import torch
+from tqdm import tqdm
+
 from config.dataset import MTATConfig
 from config.full import GlobalConfig
 from config.train import TrainConfig
 from src.model.model import Siamese
-from tqdm import tqdm
 
 import wandb
 
 
 class Trainer:
+    def __init__(self, global_config=GlobalConfig()) -> None:
+        self.config = TrainConfig(dict=global_config.train_config)
+        self.dataset_config = MTATConfig(dict=global_config.MTAT_config)
 
     def __init__(self, global_config = GlobalConfig()) -> None:
         self.global_config = global_config
@@ -27,7 +31,12 @@ class Trainer:
 
     def init_model(self, path=None, test=False):
         device = self.config.device
-        model = Siamese(filters=self.config.filters, dilations=self.config.dilations, dropout_rate=self.config.dropout_rate, output_dim=self.config.output_dim).to(device)
+        model = Siamese(
+            filters=self.config.filters,
+            dilations=self.config.dilations,
+            dropout_rate=self.config.dropout_rate,
+            output_dim=self.config.output_dim,
+        ).to(device)
         total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print(f"Total number of trainable parameters: {total_params}")
         model.train()
@@ -36,16 +45,16 @@ class Trainer:
         it = 0
         if path is not None:
             checkpoint = torch.load(path)
-            model.load_state_dict(checkpoint['model_state_dict'], strict=False)
-            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            it = checkpoint['it']
+            model.load_state_dict(checkpoint["gen_state_dict"], strict=False)
+            optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+            it = checkpoint["it"]
         if test:
             model.eval()
-        return model,optimizer,scaler,it
+        return model, optimizer, scaler, it
 
-
-    def save_model(self,loss, it, model, optimizer, scaler):
+    def save_model(self, loss, it, model, optimizer, scaler):
         os.makedirs(self.config.save_path, exist_ok=True)
+
         torch.save({
                 'gen_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
@@ -77,14 +86,13 @@ class Trainer:
         scaler.update()
         return loss.item()
 
-
     def update_lr(self, new_lr, optimizer):
         for param_group in optimizer.param_groups:
-            param_group['lr'] = new_lr
-
+            param_group["lr"] = new_lr
 
     def train_loop(self, dataloader, model, optimizer, scaler, it=0, writer=None):
         self.save_config()
+
         dataloader_length = len(dataloader)
         if self.config.warmup:
             self.update_lr(1e-7, optimizer)
@@ -94,6 +102,7 @@ class Trainer:
             self.update_lr(self.config.lr, optimizer)
         model = model.to(self.config.device)
         model.train()
+
         try:
             counter = 0
             loss = 0.
@@ -133,5 +142,3 @@ class Trainer:
         finally:
             self.save_model(np.mean(loss_list[-counter:], axis=0), it, model,optimizer,scaler)
             return it
-
-

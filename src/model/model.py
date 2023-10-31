@@ -2,20 +2,34 @@ import torch
 import torch.nn as nn
 
 from src.model.layers import *
-    
+
 
 class TCN(nn.Module):
-    def __init__(self, channels_in, filters=16, kernel_size=5, dilations=[2**k for k in range(10)], dropout_rate=0.1):
+    def __init__(
+        self,
+        channels_in,
+        filters=16,
+        kernel_size=5,
+        dilations=[2**k for k in range(10)],
+        dropout_rate=0.1,
+    ):
         super(TCN, self).__init__()
         channels_ls = [channels_in]
-        channels_ls.extend([filters for i in range(len(dilations)-1)])
-        self.tcn = nn.ModuleList([Residual(channels_ls[i], filters, kernel_size, dilations[i], dropout_rate) for i in range(len(dilations))])
+        channels_ls.extend([filters for i in range(len(dilations) - 1)])
+        self.tcn = nn.ModuleList(
+            [
+                Residual(
+                    channels_ls[i], filters, kernel_size, dilations[i], dropout_rate
+                )
+                for i in range(len(dilations))
+            ]
+        )
 
-    def forward(self,x):
-        skip = 0.
+    def forward(self, x):
+        skip = 0.0
         for layer in self.tcn:
             x, x_no_res = layer(x)
-            skip = skip+x_no_res
+            skip = skip + x_no_res
         return x, skip
 
 
@@ -27,7 +41,7 @@ class Head(nn.Module):
         self.dropout = nn.Dropout(dropout_rate)
         self.linear = nn.Linear(channels_in, filters)
 
-    def forward(self,x):
+    def forward(self, x):
         x = self.pool(x)
         x = torch.squeeze(x, -1)
         x = self.dropout(x)
@@ -36,23 +50,31 @@ class Head(nn.Module):
         return x
 
 
-class Hat(nn.Module): # this is called Hat because it is used on top of the Head, get it?
+class Hat(
+    nn.Module
+):  # this is called Hat because it is used on top of the Head, get it?
     def __init__(self, channels_in, output_dim=300):
         super(Hat, self).__init__()
         self.classification = nn.Linear(channels_in, output_dim)
         self.regression = nn.Linear(channels_in, 1)
 
-    def forward(self,x):
-        return self.classification(x), self.regression(x)
+    def forward(self, x):
+        return self.classification(x.detach()), self.regression(x)
 
 
 class Siamese(nn.Module):
-    def __init__(self, filters=16, dilations=[2**k for k in range(10)], dropout_rate=0.1, output_dim=300):
+    def __init__(
+        self,
+        filters=16,
+        dilations=[2**k for k in range(10)],
+        dropout_rate=0.1,
+        output_dim=300,
+    ):
         super(Siamese, self).__init__()
-        self.conv1 = nn.Conv2d(1, filters, kernel_size=(3,3))
-        self.conv2 = nn.Conv2d(filters, filters, kernel_size=(3,3))
-        self.conv3 = nn.Conv2d(filters, filters, kernel_size=(8,1))
-        self.pool = nn.MaxPool2d((3,1))
+        self.conv1 = nn.Conv2d(1, filters, kernel_size=(3, 3))
+        self.conv2 = nn.Conv2d(filters, filters, kernel_size=(3, 3))
+        self.conv3 = nn.Conv2d(filters, filters, kernel_size=(8, 1))
+        self.pool = nn.MaxPool2d((3, 1))
         self.batch_norm = nn.BatchNorm2d(1)
         self.activation = nn.ELU()
         self.dropout = nn.Dropout(dropout_rate)
@@ -80,13 +102,14 @@ class Siamese(nn.Module):
         x = self.dropout(x)
         
 
-        x = torch.squeeze(x,-2)
+        x = torch.squeeze(x, -2)
         x, skip = self.tcn(x)
-        x = self.head(x) # !!!!!! IMPORTANT !!!!!!: the input to the head should be the aggregate of features from all residuals 'skip', but official implementation simply uses the output of the last residual 'x'
+        x = self.head(
+            x
+        )  # !!!!!! IMPORTANT !!!!!!: the input to the head should be the aggregate of features from all residuals 'skip', but official implementation simply uses the output of the last residual 'x'
         classification_output, regression_output = self.hat(x)
 
         return classification_output, regression_output
-
 
 
 # class Siamese(nn.Module):
@@ -106,7 +129,7 @@ class Siamese(nn.Module):
 
 #         self.proj = nn.Linear(in_features=base_channels*4*4*32, out_features=num_features)
 
-             
+
 #     def forward(self, x):
 #         x = x.unsqueeze(-3)
 #         x = self.c0(x)
@@ -138,7 +161,7 @@ class Siamese(nn.Module):
 
 #         self.proj = nn.Linear(in_features=base_channels*4*4*32, out_features=num_features)
 
-             
+
 #     def forward(self, x):
 #         x = x.unsqueeze(-3)
 #         x = self.c0(x)

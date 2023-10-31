@@ -1,7 +1,7 @@
 from config.template import Config
 
-class PreprocessingConfig(Config):
 
+class PreprocessingConfig(Config):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.sr = 44100
@@ -12,4 +12,6 @@ class PreprocessingConfig(Config):
         self.pad_mp3 = 8192
         # self.len_audio_n = 600000
         self.rp = 0.1
-        self.rp_range = [1-self.rp,1+self.rp]
+        self.rp_range = [1 - self.rp, 1 + self.rp]
+        self.rf = 0.2
+        self.rf_range = [1 - self.rf, 1 + self.rf]
