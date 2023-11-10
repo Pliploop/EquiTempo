@@ -26,9 +26,9 @@ class FinetuningDatasetConfig(Config):
         super().__init__(*args, **kwards)
 
         self.audio_dirs = {
-            "gtzan": "../gtzan",
-            "hainsworth": "../hainsworth",
-            "giantsteps": "../giantsteps",
+            "gtzan": "/import/c4dm-datasets/gtzan_torchaudio/genres",
+            "hainsworth": "/import/c4dm-datasets/hainsworth",
+            "giantsteps": "/import/research_c4dm/JulienMarcoChrisRMRI/giantsteps-tempo-dataset/audio_wav",
             "acm_mirum": "../acm_mirum",
         }
         self.annotation_dirs = {
@@ -38,8 +38,9 @@ class FinetuningDatasetConfig(Config):
             "acm_mirum": "data/acm_mirum_tempo.csv",
         }
 
-        self.batch_size = 16
+        self.batch_size = 64
         self.extension = "wav"
+        self.sanity_check_n = None
 
 
 class EvaluationDatasetConfig(Config):
@@ -47,9 +48,9 @@ class EvaluationDatasetConfig(Config):
         super().__init__(*args, **kwards)
 
         self.audio_dirs = {
-            "gtzan": "../gtzan",
-            "hainsworth": "../hainsworth",
-            "giantsteps": "../giantsteps",
+            "gtzan": "/import/c4dm-datasets/gtzan_torchaudio/genres",
+            "hainsworth": "/import/c4dm-datasets/hainsworth",
+            "giantsteps": "/import/research_c4dm/JulienMarcoChrisRMRI/giantsteps-tempo-dataset/audio_wav",
             "acm_mirum": "../acm_mirum",
         }
         self.annotation_dirs = {

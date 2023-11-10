@@ -14,29 +14,32 @@ import wandb
 
 
 class Trainer:
-    def __init__(self, global_config=GlobalConfig()) -> None:
-        self.config = TrainConfig(dict=global_config.train_config)
-        self.dataset_config = MTATConfig(dict=global_config.MTAT_config)
 
-    def __init__(self, global_config = GlobalConfig()) -> None:
+    def __init__(self, global_config = GlobalConfig() , override_wandb = True, debug = False) -> None:
         self.global_config = global_config
         self.config = TrainConfig(dict = global_config.train_config)
         self.dataset_config = MTATConfig(dict = global_config.MTAT_config)
-        if self.config.log_wandb:
+        self.debug = debug
+        if self.config.log_wandb and override_wandb:
             self.wandb_run = wandb.init(project="EquiTempo", config=global_config.to_dict())
             self.wandb_run_name = self.wandb_run.name
         else:
             self.wandb_run = None
             self.wandb_run_name = ""
 
-    def init_model(self, path=None, test=False):
+    def init_model(self, path=None, test=False, override_device = None):
         device = self.config.device
+        if override_device is not None:
+            device = override_device
         model = Siamese(
             filters=self.config.filters,
             dilations=self.config.dilations,
             dropout_rate=self.config.dropout_rate,
             output_dim=self.config.output_dim,
         ).to(device)
+        
+        original_state_dict = model.state_dict()
+        
         total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print(f"Total number of trainable parameters: {total_params}")
         model.train()
@@ -44,9 +47,21 @@ class Trainer:
         scaler = torch.cuda.amp.GradScaler(enabled=self.config.mixed_precision)
         it = 0
         if path is not None:
-            checkpoint = torch.load(path)
+            checkpoint = torch.load(path, map_location=device)
             model.load_state_dict(checkpoint["gen_state_dict"], strict=False)
             optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+            
+            if self.debug:
+                for name, param in model.named_parameters():
+                    if name in original_state_dict:
+                        # Check if the weights match
+                        if torch.equal(param.data, original_state_dict[name].data):
+                            print(f"Weights for layer '{name}' are the same.")
+                        else:
+                            print(f"Weights for layer '{name}' are different.")
+                    else:
+                        print(f"Layer '{name}' not found in the loaded state dictionary.")
+            
             it = checkpoint["it"]
         if test:
             model.eval()

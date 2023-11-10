@@ -8,4 +8,4 @@ class EvaluationConfig(Config):
         self.checkpoint_path = "checkpoints"
         self.device = "cuda"
         # this can be overriden by command line args
-        self.dataset_name = "acm_mirum"
+        self.dataset_name = "gtzan"
