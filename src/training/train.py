@@ -26,6 +26,7 @@ class Trainer:
         else:
             self.wandb_run = None
             self.wandb_run_name = ""
+        self.it = 0
 
     def init_model(self, path=None, test=False, override_device = None):
         device = self.config.device
@@ -45,7 +46,7 @@ class Trainer:
         model.train()
         optimizer = torch.optim.Adam(model.parameters(), lr=self.config.lr, betas=(0.9, 0.999))
         scaler = torch.cuda.amp.GradScaler(enabled=self.config.mixed_precision)
-        it = 0
+        it = self.it
         if path is not None:
             checkpoint = torch.load(path, map_location=device)
             model.load_state_dict(checkpoint["gen_state_dict"], strict=False)
@@ -63,6 +64,7 @@ class Trainer:
                         print(f"Layer '{name}' not found in the loaded state dictionary.")
             
             it = checkpoint["it"]
+            self.it = it
         if test:
             model.eval()
         return model, optimizer, scaler, it
@@ -87,7 +89,7 @@ class Trainer:
     def loss_function(self, c1, c2, alpha1, alpha2, eps=1e-7):
         c_ratio = c1/(c2+eps)
         alpha_ratio = alpha1/(alpha2+eps)
-        return torch.abs(c_ratio-alpha_ratio).mean()
+        return torch.abs(c_ratio.squeeze()-alpha_ratio.squeeze()).mean()
 
 
     def train_iteration(self, x1, x2, alpha1, alpha2, model, optimizer, scaler):
@@ -139,6 +141,7 @@ class Trainer:
                     loss_list.append(loss)
                     counter += 1
                     it += 1
+                    self.it = it
                     if self.config.warmup:
                         if epoch==0:
                             lr = lr + (1/dataloader_length)*target_lr

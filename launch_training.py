@@ -24,7 +24,7 @@ if __name__=="__main__":
         print(f'loading config from {args.config_path}')
         globalconfig.from_yaml(args.config_path)
 
-    trainer = Trainer(global_config=globalconfig)
+    trainer = Trainer(global_config=globalconfig, override_wandb=False)
     model, optimizer, scaler, it = trainer.init_model()
     dataset = MTATDataset(global_config=globalconfig)
     dataloader = dataset.create_dataloader()

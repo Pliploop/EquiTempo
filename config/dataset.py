@@ -8,11 +8,11 @@ class MTATConfig(Config):
         self.annotations_path = "data/MTAT_annotations.csv"
         self.dir_path = "/import/research_c4dm/JulienMarcoChrisRMRI/MTAT_wav"
         self.batch_size = 16
-        self.num_workers = 16
+        self.num_workers = 32
         self.extension = 'wav'
 
 
-        self.augment = True
+        self.augment = False
         self.polarity_aug_chance = 0.2
         self.gain_aug_chance = 0.2
         self.gaussian_noise_aug_chance = 0.2
