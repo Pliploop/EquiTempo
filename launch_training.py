@@ -15,6 +15,8 @@ if __name__=="__main__":
 
     # Add an argument to accept the YAML config path
     parser.add_argument("--config_path", required=False, type=str, help="Path to the YAML config file", default=None)
+    parser.add_argument("--resume_id", required=False, help="wandb run id to resume", default=None)
+    parser.add_argument("--resume_checkpoint", required=False, help="checkpoint path to resume training from", default=None)
 
     args = parser.parse_args()
 
@@ -24,10 +26,10 @@ if __name__=="__main__":
         print(f'loading config from {args.config_path}')
         globalconfig.from_yaml(args.config_path)
 
-    trainer = Trainer(global_config=globalconfig, override_wandb=False)
-    model, optimizer, scaler, it = trainer.init_model()
+    trainer = Trainer(global_config=globalconfig, override_wandb=True, resume_id=args.resume_id)
+    model, optimizer, scaler, it = trainer.init_model(path=args.resume_checkpoint)
     dataset = MTATDataset(global_config=globalconfig)
     dataloader = dataset.create_dataloader()
     writer = SummaryWriter()
 
-    trainer.train_loop(dataloader, model, optimizer, scaler, writer=writer)
+    trainer.train_loop(dataloader, model, optimizer, scaler, writer=writer, it=it)

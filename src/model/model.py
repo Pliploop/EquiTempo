@@ -60,7 +60,7 @@ class Hat(
 
     def forward(self, x):
         # classif = x.detach()
-        return self.classification(x), self.regression(x)
+        return self.classification(x.detach()), self.regression(x)
 
 
 class Siamese(nn.Module):

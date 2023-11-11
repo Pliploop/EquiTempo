@@ -8,7 +8,7 @@ class MTATConfig(Config):
         self.annotations_path = "data/MTAT_annotations.csv"
         self.dir_path = "/import/research_c4dm/JulienMarcoChrisRMRI/MTAT_wav"
         self.batch_size = 16
-        self.num_workers = 32
+        self.num_workers = 4
         self.extension = 'wav'
 
 
@@ -38,7 +38,7 @@ class FinetuningDatasetConfig(Config):
             "acm_mirum": "data/acm_mirum_tempo.csv",
         }
 
-        self.batch_size = 64
+        self.batch_size = 16
         self.extension = "wav"
         self.sanity_check_n = None
 

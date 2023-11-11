@@ -15,14 +15,19 @@ import wandb
 
 class Trainer:
 
-    def __init__(self, global_config = GlobalConfig() , override_wandb = True, debug = False) -> None:
+    def __init__(self, global_config = GlobalConfig() , override_wandb = True, debug = False, resume_id = None) -> None:
         self.global_config = global_config
         self.config = TrainConfig(dict = global_config.train_config)
         self.dataset_config = MTATConfig(dict = global_config.MTAT_config)
         self.debug = debug
-        if self.config.log_wandb and override_wandb:
-            self.wandb_run = wandb.init(project="EquiTempo", config=global_config.to_dict())
+        if self.config.log_wandb or override_wandb:
+            if resume_id is None:
+                self.wandb_run = wandb.init(project="EquiTempo", config=global_config.to_dict())
+            else:
+                print(f"resuming run {resume_id}")
+                self.wandb_run = wandb.init(project="EquiTempo", config=global_config.to_dict(), resume="must", id=resume_id)
             self.wandb_run_name = self.wandb_run.name
+            
         else:
             self.wandb_run = None
             self.wandb_run_name = ""
@@ -78,7 +83,7 @@ class Trainer:
                 'scaler_state_dict': scaler.state_dict(),
                 'loss': loss,
                 'it': it,
-                }, self.config.save_path+f'/model_{self.wandb_run_name}_loss_{str(loss)[:6]}_it_{it}.pt')
+                }, self.config.save_path+f'/{self.wandb_run_name}/loss_{str(loss)[:6]}_it_{it}.pt')
 
     def save_config(self):
         if not os.path.exists(self.config.save_path):
