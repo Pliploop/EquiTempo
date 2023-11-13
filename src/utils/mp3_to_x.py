@@ -4,7 +4,7 @@ import scipy
 import numpy as np
 from tqdm import tqdm
 
-def convert_folder_to_extension(folder_path, new_folder = None, extension=  'wav', delete = False):
+def convert_folder_to_extension(folder_path, new_folder = None, extension=  'wav', delete = False, sr = 16000):
     for root, dirs, files in os.walk(folder_path):
         if new_folder is None:
             folder = root
@@ -16,7 +16,7 @@ def convert_folder_to_extension(folder_path, new_folder = None, extension=  'wav
                 try:
                     new_name = name[:-3]+extension
                     if not os.path.exists(os.path.join(folder,new_name)):
-                        y,sr =  librosa.load(os.path.join(root,name))
+                        y,sr =  librosa.load(os.path.join(root,name),sr=sr)
                         if not os.path.exists(folder):
                             os.makedirs(folder)
                         if extension =='wav':
@@ -31,9 +31,9 @@ def convert_folder_to_extension(folder_path, new_folder = None, extension=  'wav
                 
 
 
-def convert_folder_to_wav(folder_path, new_folder = None, delete = False):
-    convert_folder_to_extension(folder_path=folder_path,extension='wav', new_folder=new_folder, delete=delete)
+def convert_folder_to_wav(folder_path, new_folder = None, delete = False, sr = 16000):
+    convert_folder_to_extension(folder_path=folder_path,extension='wav', new_folder=new_folder, delete=delete, sr = sr)
 
 
-def convert_folder_to_npy(folder_path, new_folder = None, delete = False):
-    convert_folder_to_extension(folder_path=folder_path,extension='npy', new_folder=new_folder, delete=delete)
+def convert_folder_to_npy(folder_path, new_folder = None, delete = False, sr = 16000):
+    convert_folder_to_extension(folder_path=folder_path,extension='npy', new_folder=new_folder, delete=delete, sr =sr)

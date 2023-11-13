@@ -59,6 +59,7 @@ class Hat(
         self.regression = nn.Linear(channels_in, 1)
 
     def forward(self, x):
+        # classif = x.detach()
         return self.classification(x.detach()), self.regression(x)
 
 

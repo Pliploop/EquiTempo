@@ -12,7 +12,7 @@ class MTATConfig(Config):
         self.extension = 'wav'
 
 
-        self.augment = True
+        self.augment = False
         self.polarity_aug_chance = 0.2
         self.gain_aug_chance = 0.2
         self.gaussian_noise_aug_chance = 0.2
@@ -26,9 +26,9 @@ class FinetuningDatasetConfig(Config):
         super().__init__(*args, **kwards)
 
         self.audio_dirs = {
-            "gtzan": "../gtzan",
-            "hainsworth": "../hainsworth",
-            "giantsteps": "../giantsteps",
+            "gtzan": "/import/c4dm-datasets/gtzan_torchaudio/genres",
+            "hainsworth": "/import/c4dm-datasets/hainsworth",
+            "giantsteps": "/import/research_c4dm/JulienMarcoChrisRMRI/giantsteps-tempo-dataset/audio_wav",
             "acm_mirum": "../acm_mirum",
         }
         self.annotation_dirs = {
@@ -39,7 +39,9 @@ class FinetuningDatasetConfig(Config):
         }
 
         self.batch_size = 16
+        self.num_workers = 16
         self.extension = "wav"
+        self.sanity_check_n = None
 
 
 class EvaluationDatasetConfig(Config):
@@ -47,9 +49,9 @@ class EvaluationDatasetConfig(Config):
         super().__init__(*args, **kwards)
 
         self.audio_dirs = {
-            "gtzan": "../gtzan",
-            "hainsworth": "../hainsworth",
-            "giantsteps": "../giantsteps",
+            "gtzan": "/import/c4dm-datasets/gtzan_torchaudio/genres",
+            "hainsworth": "/import/c4dm-datasets/hainsworth",
+            "giantsteps": "/import/research_c4dm/JulienMarcoChrisRMRI/giantsteps-tempo-dataset/audio_wav",
             "acm_mirum": "../acm_mirum",
         }
         self.annotation_dirs = {
@@ -60,4 +62,5 @@ class EvaluationDatasetConfig(Config):
         }
 
         self.batch_size = 16
+        self.num_workers = 16
         self.extension = "wav"

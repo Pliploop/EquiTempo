@@ -7,8 +7,13 @@ class FinetuningConfig(Config):
 
         self.output_dim = 300
         self.checkpoint_path = "checkpoints"
-        self.lr = 0.0001
+        self.lr = 0.001
         self.epochs = 100
         self.device = "cuda"
+        self.wandb_log = True
         # this can be overriden by command line args
-        self.dataset_name_list = ["gtzan"]
+        self.dataset_name_list = ["gtzan","giantsteps"]
+        self.stretch = True
+        self.save_path = "checkpoints/fine_tune"
+        self.finetuned_from = ''
+        self.save_every = 10
