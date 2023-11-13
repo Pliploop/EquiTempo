@@ -9,6 +9,8 @@ from config.dataset import MTATConfig
 from config.full import GlobalConfig
 from config.train import TrainConfig
 from src.model.model import Siamese
+import datetime
+
 
 import wandb
 
@@ -20,7 +22,8 @@ class Trainer:
         self.config = TrainConfig(dict = global_config.train_config)
         self.dataset_config = MTATConfig(dict = global_config.MTAT_config)
         self.debug = debug
-        if self.config.log_wandb or override_wandb:
+        self.first_run = True
+        if (self.config.log_wandb or override_wandb) and override_wandb:
             if resume_id is None:
                 self.wandb_run = wandb.init(project="EquiTempo", config=global_config.to_dict())
             else:
@@ -30,8 +33,10 @@ class Trainer:
             
         else:
             self.wandb_run = None
-            self.wandb_run_name = ""
+            current_time = datetime.datetime.now()
+            self.wandb_run_name = current_time.strftime("%d-%m-%H%M%S")
         self.it = 0
+        self.epoch = 0
 
     def init_model(self, path=None, test=False, override_device = None):
         device = self.config.device
@@ -69,43 +74,61 @@ class Trainer:
                         print(f"Layer '{name}' not found in the loaded state dictionary.")
             
             it = checkpoint["it"]
+            epoch = 0
+            if "epoch" in checkpoint:
+                epoch = checkpoint['epoch']
+                self.epoch = epoch
             self.it = it
         if test:
             model.eval()
-        return model, optimizer, scaler, it
+        return model, optimizer, scaler, self.it, self.epoch
 
     def save_model(self, loss, it, model, optimizer, scaler):
-        os.makedirs(self.config.save_path, exist_ok=True)
+        os.makedirs(self.config.save_path+f'/{self.wandb_run_name}', exist_ok=True)
 
         torch.save({
                 'gen_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'scaler_state_dict': scaler.state_dict(),
                 'loss': loss,
+                'epoch': self.epoch,
                 'it': it,
                 }, self.config.save_path+f'/{self.wandb_run_name}/loss_{str(loss)[:6]}_it_{it}.pt')
 
     def save_config(self):
-        if not os.path.exists(self.config.save_path):
-            os.makedirs(self.config.save_path)
-        self.global_config.save(self.config.save_path+f'/model_{self.wandb_run_name}.yml')
+        os.makedirs(self.config.save_path+f'/{self.wandb_run_name}', exist_ok=True)
+        self.global_config.save(self.config.save_path+f'/{self.wandb_run_name}/config.yml')
 
 
     def loss_function(self, c1, c2, alpha1, alpha2, eps=1e-7):
         c_ratio = c1/(c2+eps)
         alpha_ratio = alpha1/(alpha2+eps)
+        if self.first_run:
+            print('c_ratio:',c_ratio.shape)
+            print('alpha_ratio:',alpha_ratio.shape)
         return torch.abs(c_ratio.squeeze()-alpha_ratio.squeeze()).mean()
 
 
     def train_iteration(self, x1, x2, alpha1, alpha2, model, optimizer, scaler):
         with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=self.config.mixed_precision):
+            if self.first_run:
+                print('x1:',x1.shape)
+                print('x2:',x2.shape)
             _,c1 = model(x1)
             _,c2 = model(x2)
-            loss = self.loss_function(c1,c2,alpha1,alpha2)
+            if self.first_run:
+                print('c1:',c1.shape)
+                print('c2:',c2.shape)
+                print('alpha1:',alpha1.shape)
+                print('alpha2:',alpha2.shape)
+            loss1 = self.loss_function(c1,c2,alpha1,alpha2)
+            loss2 = self.loss_function(c2,c1,alpha2,alpha1)
+        loss = 0.5*(loss1+loss2)
         optimizer.zero_grad()
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
+        self.first_run = False
         return loss.item()
 
     def update_lr(self, new_lr, optimizer):
@@ -128,7 +151,7 @@ class Trainer:
         try:
             counter = 0
             loss = 0.
-            for epoch in range(self.config.epochs):
+            for epoch in range(self.epoch,self.config.epochs):
                 bef = time.time()
                 bef_loop = time.time()
                 loss_list = []
@@ -160,6 +183,9 @@ class Trainer:
                         bef_loop = time.time()
                 self.save_model(np.mean(loss_list[-counter:], axis=0), it, model,optimizer,scaler)
                 counter = 0
+                self.epoch += 1
+                
+                
         except Exception as e:
             print(e)
         finally:

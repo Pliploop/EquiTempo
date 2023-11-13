@@ -17,8 +17,12 @@ from src.finetuning.finetune_loss import XentBoeck
 
 import wandb
 
+def finetune(model_name, dataset_name_list=None, global_config =None, resume_id = None, resume_checkpoint = None):
+    
+    if resume_checkpoint:
+        model_name = resume_checkpoint
 
-def finetune(model_name, dataset_name_list=None, global_config =None):
+    
     if global_config:
         config = FinetuningConfig(dict=global_config.finetuning_config) 
     else:
@@ -31,36 +35,59 @@ def finetune(model_name, dataset_name_list=None, global_config =None):
     device = torch.device(
         "cuda" if torch.cuda.is_available() and config.device == "cuda" else "cpu"
     )
+    
+    
     if model_name[-3:] != ".pt":
         model_name += ".pt"
 
     model_path = config.checkpoint_path + "/" + model_name
-    trainer = Trainer()
-    model, _, _, _ = Trainer().init_model(model_path)
-    optimizer = torch.optim.Adam(model.parameters(),lr = config.lr)
+    
     if config.wandb_log:
-        
-            wandb_run = wandb.init(project="EquiTempo", config=global_config.to_dict())
-            wandb_run.name = wandb_run.name + '_finetune'
-            wandb.watch(models=model,log='all', log_freq=10)
+            if resume_id is not None:
+                print(f'resuming run {resume_id}')
+                wandb_run = wandb.init(project="EquiTempo", config=global_config.to_dict(), id=resume_id, resume="must")
+            else:
+                wandb_run = wandb.init(project="EquiTempo", config=global_config.to_dict())
+                wandb_run.name = wandb_run.name + '_finetune'
+            
+            
     else:    
             wandb_run = None
             wandb_run_name = ""
+        
+    model, optimizer, scaler, it, epoch = Trainer().init_model(model_path)
+    
+    if resume_checkpoint is None:
+        print('lr:', config.lr)
+        optimizer = torch.optim.Adam(model.parameters(),lr = config.lr)
+            
+    if config.wandb_log:
+        wandb.watch(models=model,log='all', log_freq=10)
 
     model.train()
 
     # loss_function = nn.CrossEntropyLoss()
     loss_function = XentBoeck(device=device)
-    dataset = FinetuningDataset(dataset_name_list=dataset_name_list, stretch=config.stretch)
+    dataset = FinetuningDataset(dataset_name_list=dataset_name_list, stretch=config.stretch, global_config=global_config)
     dataloader = dataset.create_dataloader()
     
+    
+    print(resume_checkpoint)
     counter = 0
-    loss = 0.
-    it = 0
+    if resume_checkpoint is None:
+        loss = 0.
+        it = 0
     
     first_run = True
+    
+    # save in the same dir, add initials of datasets used
+    datasets_initials = "_".join(
+        [dataset_name[:3] for dataset_name in dataset_name_list]
+    )
+    # make uppercase
+    datasets_initials = datasets_initials.upper()
             
-    for epoch in range(config.epochs):
+    for epoch in range(epoch,config.epochs):
         progress_bar = tqdm(
             dataloader, desc=f"Epoch {epoch+1}/{config.epochs}", leave=False
         )
@@ -112,27 +139,22 @@ def finetune(model_name, dataset_name_list=None, global_config =None):
             
             first_run = False
 
-        print(f"Epoch {epoch+1}/{100}, Loss: {loss.item():.4f}")
+        save_model(config,loss,it,model,optimizer,epoch,wandb_run,acc_1,acc_2,datasets_initials)
+        print(f"Epoch {epoch+1}/{config.epochs}, Loss: {loss.item():.4f}")
 
-    # save in the same dir, add initials of datasets used
-    datasets_initials = "_".join(
-        [dataset_name[:3] for dataset_name in dataset_name_list]
-    )
-    # make uppercase
-    datasets_initials = datasets_initials.upper()
-    ft_model_path = model_path.replace(".pt", f"_{datasets_initials}.pt")
-
-    # torch.save(model.state_dict(), ft_model_path)
-    save_model(config,loss,it,model,optimizer,wandb_run,acc_1, acc_2, datasets_initials)
     
-def save_model(config, loss, it, model, optimizer, wandb_run, acc_1,acc_2, datasets_initials):
-        os.makedirs(config.save_path, exist_ok=True)
+
+    save_model(config,loss,it,model,optimizer,epoch,wandb_run,acc_1, acc_2, datasets_initials)
+    
+def save_model(config, loss, it, model, optimizer, epoch, wandb_run, acc_1,acc_2, datasets_initials):
+        os.makedirs(config.save_path+f'/model_{wandb_run.name}_{datasets_initials}', exist_ok=True)
         torch.save({
                 'gen_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': loss,
                 'it': it,
-                }, config.save_path+f'/model_{wandb_run.name}_finetune_{datasets_initials}_loss_{str(loss)[:6]}_acc1{acc_1}_acc2{acc_2}_it_{it}.pt')
+                'epoch' : epoch,
+                }, config.save_path+f'/model_{wandb_run.name}_{datasets_initials}/it_{it}_loss_{str(loss.item())[:6]}_acc1{round(acc_1[0],2)}_acc2{round(acc_2[0],2)}.pt')
 
 if __name__ == "__main__":
     # argument parser

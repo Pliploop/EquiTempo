@@ -27,7 +27,7 @@ if __name__=="__main__":
         globalconfig.from_yaml(args.config_path)
 
     trainer = Trainer(global_config=globalconfig, override_wandb=True, resume_id=args.resume_id)
-    model, optimizer, scaler, it = trainer.init_model(path=args.resume_checkpoint)
+    model, optimizer, scaler, it, epoch = trainer.init_model(path=args.resume_checkpoint)
     dataset = MTATDataset(global_config=globalconfig)
     dataloader = dataset.create_dataloader()
     writer = SummaryWriter()

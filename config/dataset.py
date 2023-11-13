@@ -8,7 +8,7 @@ class MTATConfig(Config):
         self.annotations_path = "data/MTAT_annotations.csv"
         self.dir_path = "/import/research_c4dm/JulienMarcoChrisRMRI/MTAT_wav"
         self.batch_size = 16
-        self.num_workers = 4
+        self.num_workers = 16
         self.extension = 'wav'
 
 
@@ -39,6 +39,7 @@ class FinetuningDatasetConfig(Config):
         }
 
         self.batch_size = 16
+        self.num_workers = 16
         self.extension = "wav"
         self.sanity_check_n = None
 
@@ -61,4 +62,5 @@ class EvaluationDatasetConfig(Config):
         }
 
         self.batch_size = 16
+        self.num_workers = 16
         self.extension = "wav"
