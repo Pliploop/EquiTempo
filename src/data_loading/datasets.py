@@ -10,14 +10,12 @@ import torch
 import torchaudio.transforms as T
 from torch.utils.data import DataLoader, Dataset
 
-from src.data_loading.augmentations import *
-from src.data_loading.preprocessing import *
-
 from config.dataset import EvaluationDatasetConfig, FinetuningDatasetConfig, MTATConfig
 from config.full import GlobalConfig
 from config.preprocessing import PreprocessingConfig
+from src.data_loading.augmentations import *
+from src.data_loading.preprocessing import *
 from src.data_loading.preprocessing import pad_or_truncate, power2db
-
 
 
 class MTATDataset(Dataset):
@@ -51,17 +49,32 @@ class MTATDataset(Dataset):
         self.sr = self.preprocessing_config.sr
 
         ## Move to config?
-        self.audio_transforms = Compose([
-            RandomApply([PolarityInversion()], p=self.config.polarity_aug_chance),
-            RandomApply([Noise(min_snr=0.001, max_snr=0.005)], p=self.config.gaussian_noise_aug_chance),
-            RandomApply([Gain()], p=self.config.gain_aug_chance),
-            RandomApply([HighLowPass(sample_rate=self.sr)], p = self.config.filter_aug_chance)
-        ])
+        self.audio_transforms = Compose(
+            [
+                RandomApply([PolarityInversion()], p=self.config.polarity_aug_chance),
+                RandomApply(
+                    [Noise(min_snr=0.001, max_snr=0.005)],
+                    p=self.config.gaussian_noise_aug_chance,
+                ),
+                RandomApply([Gain()], p=self.config.gain_aug_chance),
+                RandomApply(
+                    [HighLowPass(sample_rate=self.sr)], p=self.config.filter_aug_chance
+                ),
+            ]
+        )
 
-        self.spectrogram_transforms = Compose([
-            RandomApply([T.TimeMasking(time_mask_param=80)],p=self.config.specaugment_aug_chance),
-            RandomApply([T.FrequencyMasking(freq_mask_param=80)],p=self.config.specaugment_aug_chance)
-        ])
+        self.spectrogram_transforms = Compose(
+            [
+                RandomApply(
+                    [T.TimeMasking(time_mask_param=80)],
+                    p=self.config.specaugment_aug_chance,
+                ),
+                RandomApply(
+                    [T.FrequencyMasking(freq_mask_param=80)],
+                    p=self.config.specaugment_aug_chance,
+                ),
+            ]
+        )
 
     def run_annotations_check(self):
         mask = (self.audio_dir + "/" + self.annotations.file_path).apply(
@@ -91,7 +104,7 @@ class MTATDataset(Dataset):
                 audio_path, stop=None, dtype="float32", always_2d=True
             )
             start_crop = np.random.randint(0, length - len_audio_n_dataset)
-            
+
             audio = audio[start_crop : start_crop + len_audio_n_dataset, 0]
 
         if self.extension == "npy":
@@ -100,19 +113,18 @@ class MTATDataset(Dataset):
             sample_rate = self.preprocessing_config.dataset_sr
             start_crop = np.random.randint(0, length - len_audio_n_dataset)
             audio = audio[start_crop : start_crop + len_audio_n_dataset, 0]
-            
 
         if sample_rate != self.preprocessing_config.sr:
             audio = soxr.resample(audio, sample_rate, self.preprocessing_config.sr)
-            
+
         ## stretching
         rp_range = self.preprocessing_config.rp_range
 
-        rp_1 = np.random.uniform(rp_range[0],rp_range[1])
-        rp_2 = np.random.uniform(rp_range[0],rp_range[1])
+        rp_1 = np.random.uniform(rp_range[0], rp_range[1])
+        rp_2 = np.random.uniform(rp_range[0], rp_range[1])
 
-        audio_1 = librosa.effects.time_stretch(audio,rate=rp_1)
-        audio_2 = librosa.effects.time_stretch(audio,rate=rp_2)
+        audio_1 = librosa.effects.time_stretch(audio, rate=rp_1)
+        audio_2 = librosa.effects.time_stretch(audio, rate=rp_2)
 
         ## cropping or padding
         audio_1 = pad_or_truncate(torch.from_numpy(audio_1), len_audio_n)
@@ -126,21 +138,23 @@ class MTATDataset(Dataset):
         mel1 = self.melgram(audio_1)
         mel2 = self.melgram(audio_2)
 
-        if self.train and self.augment :
+        if self.train and self.augment:
             mel1 = self.spectrogram_transforms.transform(mel1)
-            mel2 = self.spectrogram_transforms.transform(mel2)    
+            mel2 = self.spectrogram_transforms.transform(mel2)
 
-        mel1 = power2db(mel1)  
-        mel2 = power2db(mel2)  
+        mel1 = power2db(mel1)
+        mel2 = power2db(mel2)
 
-        return {
-            "audio_1" : mel1,
-            "audio_2" : mel2,
-            "rp_1" : rp_1,
-            "rp_2" : rp_2}
+        return {"audio_1": mel1, "audio_2": mel2, "rp_1": rp_1, "rp_2": rp_2}
 
     def create_dataloader(self):
-        return DataLoader(dataset=self,batch_size=self.config.batch_size, shuffle=True, num_workers=self.config.num_workers, drop_last=True)
+        return DataLoader(
+            dataset=self,
+            batch_size=self.config.batch_size,
+            shuffle=True,
+            num_workers=self.config.num_workers,
+            drop_last=True,
+        )
 
 
 class FinetuningDataset(Dataset):
@@ -166,7 +180,6 @@ class FinetuningDataset(Dataset):
             for dataset_name in dataset_name_list
         }
         for df in self.annotations.values():
-            
             df["tempo"] = df["tempo"].apply(float)
 
         # create an audio_path column depending on dataset structure
@@ -186,11 +199,19 @@ class FinetuningDataset(Dataset):
                     dataset_name
                 ]["name"].apply(
                     lambda x: os.path.join(
-                        self.audio_dirs["giantsteps"], str(x) + ".LOFI." + self.config.extension
+                        self.audio_dirs["giantsteps"],
+                        str(x) + ".LOFI." + self.config.extension,
                     )
                 )
-
-        
+            elif dataset_name == "hainsworth":
+                self.annotations[dataset_name]["audio_path"] = self.annotations[
+                    dataset_name
+                ]["name"].apply(
+                    lambda x: os.path.join(
+                        self.audio_dirs["hainsworth"],
+                        x.split(".")[0] + self.config.extension,
+                    )
+                )
 
         # concatente to one dataframe
         self.annotations = pd.concat(
@@ -239,12 +260,14 @@ class FinetuningDataset(Dataset):
             audio, sample_rate = sf.read(
                 audio_path, stop=None, dtype="float32", always_2d=True
             )
-            
-            len_audio_n_dataset = int(self.preprocessing_config.len_audio_s*sample_rate)
+
+            len_audio_n_dataset = int(
+                self.preprocessing_config.len_audio_s * sample_rate
+            )
             start_crop = np.random.randint(0, length - len_audio_n_dataset)
             audio = audio[start_crop : start_crop + len_audio_n_dataset, 0]
 
-        if self.extension == "npy": ### Nothing here for sample rates of other datasets
+        if self.extension == "npy":  ### Nothing here for sample rates of other datasets
             audio = np.load(audio_path)
             length = audio.shape[-1]
             sample_rate = self.preprocessing_config.dataset_sr
@@ -264,10 +287,10 @@ class FinetuningDataset(Dataset):
             audio = librosa.effects.time_stretch(audio, rate=rf)
         else:
             rf = 1
-        
+
         # cropping or padding
         audio = pad_or_truncate(torch.from_numpy(audio), len_audio_n)
-        
+
         return {
             "audio": power2db(self.melgram(audio)),
             "tempo": self.annotations.iloc[idx]["tempo"],
@@ -275,7 +298,12 @@ class FinetuningDataset(Dataset):
         }
 
     def create_dataloader(self):
-        return DataLoader(dataset=self, batch_size=self.config.batch_size, shuffle=True, num_workers=self.config.num_workers)
+        return DataLoader(
+            dataset=self,
+            batch_size=self.config.batch_size,
+            shuffle=True,
+            num_workers=self.config.num_workers,
+        )
 
 
 class EvaluationDataset(Dataset):
@@ -310,6 +338,13 @@ class EvaluationDataset(Dataset):
             self.annotations["audio_path"] = self.annotations["name"].apply(
                 lambda x: os.path.join(
                     self.audio_dirs["giantsteps"], x + "." + self.config.extension
+                )
+            )
+        elif dataset_name == "hainsworth":
+            self.annotations["audio_path"] = self.annotations["name"].apply(
+                lambda x: os.path.join(
+                    self.audio_dirs["hainsworth"],
+                    x.split(".")[0] + "." + self.config.extension,
                 )
             )
 
