@@ -1,3 +1,4 @@
+import datetime
 import os
 import time
 
@@ -5,6 +6,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
+import wandb
 from config.dataset import MTATConfig
 from config.full import GlobalConfig
 from config.train import TrainConfig
@@ -17,21 +19,33 @@ import wandb
 
 
 class Trainer:
-
-    def __init__(self, global_config = GlobalConfig() , override_wandb = True, debug = False, resume_id = None) -> None:
+    def __init__(
+        self,
+        global_config=GlobalConfig(),
+        override_wandb=True,
+        debug=False,
+        resume_id=None,
+    ) -> None:
         self.global_config = global_config
-        self.config = TrainConfig(dict = global_config.train_config)
-        self.dataset_config = MTATConfig(dict = global_config.MTAT_config)
+        self.config = TrainConfig(dict=global_config.train_config)
+        self.dataset_config = MTATConfig(dict=global_config.MTAT_config)
         self.debug = debug
         self.first_run = True
         if (self.config.log_wandb or override_wandb) and override_wandb:
             if resume_id is None:
-                self.wandb_run = wandb.init(project="EquiTempo", config=global_config.to_dict())
+                self.wandb_run = wandb.init(
+                    project="EquiTempo", config=global_config.to_dict()
+                )
             else:
                 print(f"resuming run {resume_id}")
-                self.wandb_run = wandb.init(project="EquiTempo", config=global_config.to_dict(), resume="must", id=resume_id)
+                self.wandb_run = wandb.init(
+                    project="EquiTempo",
+                    config=global_config.to_dict(),
+                    resume="must",
+                    id=resume_id,
+                )
             self.wandb_run_name = self.wandb_run.name
-            
+
         else:
             self.wandb_run = None
             current_time = datetime.datetime.now()
@@ -40,7 +54,7 @@ class Trainer:
         self.epoch = 0
         self.l1 = torch.nn.L1Loss(reduction='mean')
 
-    def init_model(self, path=None, test=False, override_device = None):
+    def init_model(self, path=None, test=False, override_device=None):
         device = self.config.device
         if override_device is not None:
             device = override_device
@@ -54,18 +68,20 @@ class Trainer:
         # model = TCN(proj_head_dim=32,num_filters=self.config.filters, num_dilations=len(self.config.dilations), dropout_rate=self.config.dropout_rate).to(device)
         
         original_state_dict = model.state_dict()
-        
+
         total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print(f"Total number of trainable parameters: {total_params}")
         model.train()
-        optimizer = torch.optim.Adam(model.parameters(), lr=self.config.lr, betas=(0.9, 0.999))
+        optimizer = torch.optim.Adam(
+            model.parameters(), lr=self.config.lr, betas=(0.9, 0.999)
+        )
         scaler = torch.cuda.amp.GradScaler(enabled=self.config.mixed_precision)
         it = self.it
         if path is not None:
             checkpoint = torch.load(path, map_location=device)
             model.load_state_dict(checkpoint["gen_state_dict"], strict=False)
             optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-            
+
             if self.debug:
                 for name, param in model.named_parameters():
                     if name in original_state_dict:
@@ -75,12 +91,14 @@ class Trainer:
                         else:
                             print(f"Weights for layer '{name}' are different.")
                     else:
-                        print(f"Layer '{name}' not found in the loaded state dictionary.")
-            
+                        print(
+                            f"Layer '{name}' not found in the loaded state dictionary."
+                        )
+
             it = checkpoint["it"]
             epoch = 0
             if "epoch" in checkpoint:
-                epoch = checkpoint['epoch']
+                epoch = checkpoint["epoch"]
                 self.epoch = epoch
             self.it = it
         if test:
@@ -109,9 +127,10 @@ class Trainer:
                 }, self.config.save_path+f'/{self.wandb_run_name}/latest.pt')
 
     def save_config(self):
-        os.makedirs(self.config.save_path+f'/{self.wandb_run_name}', exist_ok=True)
-        self.global_config.save(self.config.save_path+f'/{self.wandb_run_name}/config.yml')
-
+        os.makedirs(self.config.save_path + f"/{self.wandb_run_name}", exist_ok=True)
+        self.global_config.save(
+            self.config.save_path + f"/{self.wandb_run_name}/config.yml"
+        )
 
     def loss_function(self, c1, c2, alpha1, alpha2, eps=0):
         c_ratio = c1/(c2+eps)
@@ -232,11 +251,16 @@ class Trainer:
                             lr = lr + (1/train_dataloader_length)*target_lr
                             self.update_lr(lr, optimizer)
 
-                    if batch_i%self.config.display_progress_every==0:
-                        pbar.set_postfix({'Loss_sc': np.mean(loss_list[-counter:], axis=0),
-                                            'Iter': it,
-                                            'LR': optimizer.param_groups[0]['lr'],
-                                            'Time/Iter': (time.time()-bef_loop)/self.config.display_progress_every})
+                    if batch_i % self.config.display_progress_every == 0:
+                        pbar.set_postfix(
+                            {
+                                "Loss_sc": np.mean(loss_list[-counter:], axis=0),
+                                "Iter": it,
+                                "LR": optimizer.param_groups[0]["lr"],
+                                "Time/Iter": (time.time() - bef_loop)
+                                / self.config.display_progress_every,
+                            }
+                        )
                         bef_loop = time.time()
                         
                         
@@ -267,10 +291,11 @@ class Trainer:
                 self.save_model(np.mean(loss_list[-counter:], axis=0), it, model,optimizer,scaler)
                 counter = 0
                 self.epoch += 1
-                
-                
+
         except Exception as e:
             print(e)
         finally:
-            self.save_model(np.mean(loss_list[-counter:], axis=0), it, model,optimizer,scaler)
+            self.save_model(
+                np.mean(loss_list[-counter:], axis=0), it, model, optimizer, scaler
+            )
             return it

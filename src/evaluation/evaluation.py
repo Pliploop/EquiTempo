@@ -30,7 +30,7 @@ def evaluate(model_name, dataset_name=None):
 
     model_path = config.checkpoint_path + "/" + model_name
     model_path = config.checkpoint_path + "/" + model_name
-    model, optimizer, scaler, it = Trainer().init_model(model_path)
+    model, optimizer, scaler, it, epoch = Trainer().init_model(model_path)
 
     model.eval()
 
