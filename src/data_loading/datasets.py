@@ -17,7 +17,6 @@ from src.data_loading.preprocessing import pad_or_truncate, power2db, logcomp
 from src.data_loading.augmentations import *
 
 
-
 class MTATDataset(Dataset):
     def __init__(self, train=True, global_config=GlobalConfig()):
         self.config = MTATConfig(dict=global_config.MTAT_config)
