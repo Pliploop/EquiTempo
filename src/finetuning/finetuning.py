@@ -1,19 +1,17 @@
 import argparse
-import sys
 
 import torch
-import torch.nn as nn
 from tqdm import tqdm
 
 from config.finetune import FinetuningConfig
 from config.full import GlobalConfig
 from src.data_loading.datasets import FinetuningDataset
 from src.training.train import Trainer
-import time
 import numpy as np
 from src.evaluation.metrics import compute_accuracy_1, compute_accuracy_2
 import os
 from src.finetuning.finetune_loss import XentBoeck
+from src.model.finetune_hook import *
 
 import wandb
 
@@ -55,28 +53,32 @@ def finetune(model_name, dataset_name_list=None, global_config =None, resume_id 
             wandb_run = None
             wandb_run_name = ""
         
-    model, optimizer, scaler, it, epoch = Trainer().init_model(model_path)
+    model, optimizer, scaler, it, epoch = Trainer(override_wandb=config.wandb_log, global_config=global_config).init_model(model_path)
+    # pretrained_model, optimizer, scaler, it, epoch = Trainer(override_wandb=config.wandb_log, global_config=global_config).init_model(model_path)
+    
+    # feat_getter = FeatureExtractor(pretrained_model, layers=['tempo_block.dense'])
+    # model = ClassModel(feat_getter, feature_layer='tempo_block.dense', input_units=16, output_units=300)
     
     if resume_checkpoint is None:
         print('lr:', config.lr)
         optimizer = torch.optim.Adam(model.parameters(),lr = config.lr)
             
     if config.wandb_log:
-        wandb.watch(models=model,log='all', log_freq=10)
+        wandb.watch(models=model,log='all', log_freq=5)
 
-    model.train()
+    model.to(device)
+    model.eval()
 
     # loss_function = nn.CrossEntropyLoss()
     loss_function = XentBoeck(device=device)
     dataset = FinetuningDataset(dataset_name_list=dataset_name_list, stretch=config.stretch, global_config=global_config)
     dataloader = dataset.create_dataloader()
     
-    
-    print(resume_checkpoint)
     counter = 0
     if resume_checkpoint is None:
         loss = 0.
         it = 0
+        epoch = 0
     
     first_run = True
     
@@ -97,7 +99,6 @@ def finetune(model_name, dataset_name_list=None, global_config =None, resume_id 
             audio = item_dict["audio"].to(device)
             tempo = item_dict["tempo"].to(device)
             rf = item_dict["rf"].to(device)
-            # round and convert tempos to int
             final_tempos = torch.round(tempo * rf).long()
 
             classification_out, _ = model(audio)
@@ -108,14 +109,15 @@ def finetune(model_name, dataset_name_list=None, global_config =None, resume_id 
             
             if first_run:
                 print(f" preds : {preds}")
-                print(f"truth: {truth}")
+                print(f"original_tempi: {tempo.detach().cpu().numpy()}")
                 print(f"rf: {rf}")
-                print()
+                print(f"truth: {truth}")
                 
-            
-            if it%20==0:
                 print(classification_out.shape)
                 print(final_tempos.shape)
+                
+            
+            if it%100==0:
                 print(f" preds : {preds}")
                 print(f"truth: {truth}")
             
@@ -138,8 +140,9 @@ def finetune(model_name, dataset_name_list=None, global_config =None, resume_id 
             progress_bar.set_postfix(loss=loss.item())
             
             first_run = False
-
-        save_model(config,loss,it,model,optimizer,epoch,wandb_run,acc_1,acc_2,datasets_initials)
+            
+        if epoch%5==0:
+            save_model(config,loss,it,model,optimizer,epoch,wandb_run,acc_1,acc_2,datasets_initials)
         print(f"Epoch {epoch+1}/{config.epochs}, Loss: {loss.item():.4f}")
 
     
@@ -155,6 +158,14 @@ def save_model(config, loss, it, model, optimizer, epoch, wandb_run, acc_1,acc_2
                 'it': it,
                 'epoch' : epoch,
                 }, config.save_path+f'/model_{wandb_run.name}_{datasets_initials}/it_{it}_loss_{str(loss.item())[:6]}_acc1{round(acc_1[0],2)}_acc2{round(acc_2[0],2)}.pt')
+        
+        torch.save({
+                'gen_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'loss': loss,
+                'it': it,
+                'epoch' : epoch,
+                }, config.save_path+f'/model_{wandb_run.name}_{datasets_initials}/latest.pt')
 
 if __name__ == "__main__":
     # argument parser

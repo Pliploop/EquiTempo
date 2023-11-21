@@ -53,14 +53,19 @@ class Head(nn.Module):
 class Hat(
     nn.Module
 ):  # this is called Hat because it is used on top of the Head, get it?
-    def __init__(self, channels_in, output_dim=300):
+    def __init__(self, channels_in, output_dim=300, freeze_backbone = False):
         super(Hat, self).__init__()
         self.classification = nn.Linear(channels_in, output_dim)
         self.regression = nn.Linear(channels_in, 1)
+        self.freeze_backbone = freeze_backbone
 
     def forward(self, x):
-        # classif = x.detach()
-        return self.classification(x.detach()), self.regression(x)
+        if self.freeze_backbone:
+            class_in = x.detach()
+        else:
+            class_in = x
+        reg_in = x
+        return self.classification(class_in), self.regression(reg_in)
 
 
 class Siamese(nn.Module):
@@ -70,6 +75,7 @@ class Siamese(nn.Module):
         dilations=[2**k for k in range(10)],
         dropout_rate=0.1,
         output_dim=300,
+        freeze_backbone = False
     ):
         super(Siamese, self).__init__()
         self.conv1 = nn.Conv2d(1, filters, kernel_size=(3, 3))
@@ -82,7 +88,7 @@ class Siamese(nn.Module):
 
         self.tcn = TCN(filters, filters, 5, dilations, dropout_rate)
         self.head = Head(filters, filters, dropout_rate)
-        self.hat = Hat(filters, output_dim)
+        self.hat = Hat(filters, output_dim, freeze_backbone=freeze_backbone)
 
     def forward(self, x):
         x = x.unsqueeze(-3)

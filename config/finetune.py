@@ -7,7 +7,7 @@ class FinetuningConfig(Config):
 
         self.output_dim = 300
         self.checkpoint_path = "checkpoints"
-        self.lr = 0.001
+        self.lr = 0.003
         self.epochs = 100
         self.device = "cuda"
         self.wandb_log = True

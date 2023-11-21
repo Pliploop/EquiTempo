@@ -5,10 +5,10 @@ class TrainConfig(Config):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self.mixed_precision = True
+        self.mixed_precision = False
         self.filters = 16
         self.dilations = [2**k for k in range(10)]
-        self.dropout_rate = 0.1
+        self.dropout_rate = 0
         self.output_dim = 300
         self.checkpoint_path = 'checkpoints'
         self.lr = 0.001

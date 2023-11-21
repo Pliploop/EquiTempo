@@ -16,7 +16,8 @@ from src.data_loading.preprocessing import *
 from config.dataset import EvaluationDatasetConfig, FinetuningDatasetConfig, MTATConfig
 from config.full import GlobalConfig
 from config.preprocessing import PreprocessingConfig
-from src.data_loading.preprocessing import pad_or_truncate, power2db
+from src.data_loading.preprocessing import pad_or_truncate, power2db, logcomp
+
 
 
 
@@ -46,7 +47,7 @@ class MTATDataset(Dataset):
             n_fft=2048,
             win_length=2048,
             hop_length=441,
-            power=2,
+            power=1,
         )
         self.sr = self.preprocessing_config.sr
 
@@ -130,8 +131,8 @@ class MTATDataset(Dataset):
             mel1 = self.spectrogram_transforms.transform(mel1)
             mel2 = self.spectrogram_transforms.transform(mel2)    
 
-        mel1 = power2db(mel1)  
-        mel2 = power2db(mel2)  
+        mel1 = logcomp(mel1)  
+        mel2 = logcomp(mel2)  
 
         return {
             "audio_1" : mel1,
@@ -139,9 +140,11 @@ class MTATDataset(Dataset):
             "rp_1" : rp_1,
             "rp_2" : rp_2}
 
-    def create_dataloader(self):
-        return DataLoader(dataset=self,batch_size=self.config.batch_size, shuffle=True, num_workers=self.config.num_workers, drop_last=True)
-
+    def create_dataloader(self, split = 0.1):
+        train_dataset, val_dataset = torch.utils.data.random_split(self,[1-split,split])
+        train_dataloader = DataLoader(dataset=train_dataset,batch_size=self.config.batch_size, shuffle=True, num_workers=self.config.num_workers, drop_last=True)
+        val_dataloader = DataLoader(dataset=val_dataset,batch_size=self.config.batch_size, shuffle=True, num_workers=self.config.num_workers, drop_last=True)
+        return train_dataloader,val_dataloader
 
 class FinetuningDataset(Dataset):
     def __init__(
@@ -149,6 +152,7 @@ class FinetuningDataset(Dataset):
         dataset_name_list: list,
         stretch: bool = True,
         global_config=GlobalConfig(),
+        debug = False,
     ):
         self.config = FinetuningDatasetConfig(
             dict=global_config.finetuning_dataset_config
@@ -156,6 +160,7 @@ class FinetuningDataset(Dataset):
         self.preprocessing_config = PreprocessingConfig(
             dict=global_config.preprocessing_config
         )
+        self.debug = debug
         self.stretch = stretch
         self.extension = self.config.extension
         self.audio_dirs = self.config.audio_dirs
@@ -217,7 +222,7 @@ class FinetuningDataset(Dataset):
             n_fft=2048,
             win_length=2048,
             hop_length=441,
-            power=2,
+            power=1,
         )
         if self.config.sanity_check_n:
             self.annotations = self.annotations.head(self.config.sanity_check_n)
@@ -252,6 +257,8 @@ class FinetuningDataset(Dataset):
             audio = audio[start_crop : start_crop + len_audio_n_dataset, 0]
 
         if sample_rate != self.preprocessing_config.sr:
+            if self.debug:
+                print(f'resampling from {sample_rate} to {self.preprocessing_config.sr}')
             audio = soxr.resample(audio, sample_rate, self.preprocessing_config.sr)
 
         # time stretching
@@ -261,6 +268,8 @@ class FinetuningDataset(Dataset):
             # make sure it doesn't exceed 300 bpm
             while rf > 299 / self.annotations.iloc[idx]["tempo"]:
                 rf = np.random.uniform(rf_range[0], rf_range[1])
+            if self.debug:
+                print(f'stretching by factor {rf}')
             audio = librosa.effects.time_stretch(audio, rate=rf)
         else:
             rf = 1
@@ -268,8 +277,10 @@ class FinetuningDataset(Dataset):
         # cropping or padding
         audio = pad_or_truncate(torch.from_numpy(audio), len_audio_n)
         
+        audio = logcomp(self.melgram(audio))
+        
         return {
-            "audio": power2db(self.melgram(audio)),
+            "audio": audio,
             "tempo": self.annotations.iloc[idx]["tempo"],
             "rf": rf,
         }
@@ -330,7 +341,7 @@ class EvaluationDataset(Dataset):
             n_fft=2048,
             win_length=2048,
             hop_length=441,
-            power=2,
+            power=1,
         )
 
     def __len__(self):
@@ -376,7 +387,7 @@ class EvaluationDataset(Dataset):
         audio = pad_or_truncate(torch.from_numpy(audio), len_audio_n)
 
         return {
-            "audio": power2db(self.melgram(audio)),
+            "audio": logcomp(self.melgram(audio)),
             "tempo": self.annotations.iloc[idx]["tempo"],
             "rf": rf,
         }

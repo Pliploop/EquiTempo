@@ -11,7 +11,7 @@ class PreprocessingConfig(Config):
         self.len_audio_n_dataset = int(self.dataset_sr * self.len_audio_s)
         self.pad_mp3 = 8192
         # self.len_audio_n = 600000
-        self.rp = 0.1
+        self.rp = 0.3
         self.rp_range = [1 - self.rp, 1 + self.rp]
         self.rf = 0.2
         self.rf_range = [1 - self.rf, 1 + self.rf]

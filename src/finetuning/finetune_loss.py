@@ -17,7 +17,7 @@ class XentBoeck(torch.nn.Module):
         Generate Boeck target by convolving one-hot vectors with the boeck window
         labels_cls_idx of shape (batch_size)'''
         conv = nn.Conv1d(1, 1, self.boeck_window.shape[2], bias=False, padding='same')
-        conv.weight = torch.nn.Parameter(self.boeck_window)
+        conv.weight = torch.nn.Parameter(self.boeck_window, requires_grad= False)
         one_hot = torch.zeros(labels_cls_idx.shape[-1], 1, preds.shape[-1]) #include channel dimension for conv
         for i, idx in enumerate(labels_cls_idx):
             one_hot[i, 0, int(idx.item())] = 1.0

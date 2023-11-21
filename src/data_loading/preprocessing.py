@@ -16,4 +16,6 @@ def power2db(S, amin=1e-10, top_db=80.0):
         log_spec = torch.maximum(log_spec, torch.amax(log_spec, (-2,-1), keepdim=True) - top_db)
     return log_spec
 
+def logcomp(S, eps = 1e-8):
+    return(torch.log(S+eps)) 
 

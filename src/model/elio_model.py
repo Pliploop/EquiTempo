@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 @author: Elio Quinton
 python3.8
@@ -90,7 +91,7 @@ class TCNBlock(nn.Module):
             kernel_size=5, 
             dilations=[1,2,4,8,16,32,64,128],
             activation=nn.ELU(),
-            dropout_rate=0.1
+            dropout_rate=0
             ):
         super(TCNBlock, self).__init__()
         self.n_channels_in = n_channels_in
@@ -188,9 +189,9 @@ class TCN(nn.Module):
     def __init__(
             self, 
             tempo_range=(0,300), 
-            mode='classification',
+            mode='regression',
             num_filters=16, 
-            dropout_rate=0.1, 
+            dropout_rate=0, 
             num_dilations=10,
             add_proj_head=False, 
             proj_head_dim=16
@@ -240,6 +241,9 @@ class TCN(nn.Module):
             )
 
     def forward(self, x):
+        
+        x = x.unsqueeze(1)
+        
         x = self.bn_input(x)
 
         # Conv block 1
