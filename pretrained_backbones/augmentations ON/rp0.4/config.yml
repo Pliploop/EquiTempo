@@ -1,0 +1,100 @@
+MTAT_config:
+  annotations_path: data/MTAT_annotations.csv
+  augment: true
+  batch_size: 16
+  dir_path: /import/research_c4dm/JulienMarcoChrisRMRI/MTAT_wav
+  extension: wav
+  filter_aug_chance: 0.3
+  gain_aug_chance: 0.2
+  gaussian_noise_aug_chance: 0.2
+  num_workers: 16
+  polarity_aug_chance: 0.2
+  reverb_aug_chance: 0.2
+  specaugment_aug_chance: 0.2
+evaluation_config:
+  checkpoint_path: checkpoints
+  dataset_name: gtzan
+  device: cuda
+evaluation_dataset_config:
+  annotation_dirs:
+    acm_mirum: data/acm_mirum_tempo.csv
+    giantsteps: data/giantsteps_tempo.csv
+    gtzan: data/gtzan_tempo.csv
+    hainsworth: data/hainsworth_tempo.csv
+  audio_dirs:
+    acm_mirum: ../acm_mirum
+    giantsteps: /import/research_c4dm/JulienMarcoChrisRMRI/giantsteps-tempo-dataset/audio_wav
+    gtzan: /import/c4dm-datasets/gtzan_torchaudio/genres
+    hainsworth: /import/c4dm-datasets/hainsworth
+  batch_size: 16
+  extension: wav
+  num_workers: 16
+finetuning_config:
+  checkpoint_path: checkpoints
+  dataset_name_list:
+  - gtzan
+  - giantsteps
+  device: cuda
+  epochs: 100
+  finetuned_from: ''
+  lr: 0.003
+  output_dim: 300
+  save_every: 10
+  save_path: checkpoints/fine_tune
+  stretch: true
+  wandb_log: true
+finetuning_dataset_config:
+  annotation_dirs:
+    acm_mirum: data/acm_mirum_tempo.csv
+    giantsteps: data/giantsteps_tempo.csv
+    gtzan: data/gtzan_tempo.csv
+    hainsworth: data/hainsworth_tempo.csv
+  audio_dirs:
+    acm_mirum: ../acm_mirum
+    giantsteps: /import/research_c4dm/JulienMarcoChrisRMRI/giantsteps-tempo-dataset/audio_wav
+    gtzan: /import/c4dm-datasets/gtzan_torchaudio/genres
+    hainsworth: /import/c4dm-datasets/hainsworth
+  batch_size: 16
+  extension: wav
+  num_workers: 16
+  sanity_check_n: null
+preprocessing_config:
+  dataset_sr: 16000
+  len_audio_n: 599760
+  len_audio_n_dataset: 217600
+  len_audio_s: 13.6
+  pad_mp3: 8192
+  rf: 0.2
+  rf_range:
+  - 0.8
+  - 1.2
+  rp: 0.4
+  rp_range:
+  - 0.6
+  - 1.4
+  sr: 44100
+train_config:
+  checkpoint_path: checkpoints
+  device: cuda
+  dilations:
+  - 1
+  - 2
+  - 4
+  - 8
+  - 16
+  - 32
+  - 64
+  - 128
+  - 256
+  - 512
+  display_progress_every: 1
+  dropout_rate: 0
+  epochs: 20
+  exp_name: filters_16_do_0_od_300
+  filters: 16
+  log_wandb: true
+  lr: 0.001
+  mixed_precision: false
+  output_dim: 300
+  save_path: checkpoints/filters_16_do_0_od_300
+  warmup: false

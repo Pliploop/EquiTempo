@@ -12,7 +12,7 @@ class MTATConfig(Config):
         self.extension = 'wav'
 
 
-        self.augment = False
+        self.augment = True
         self.polarity_aug_chance = 0.2
         self.gain_aug_chance = 0.2
         self.gaussian_noise_aug_chance = 0.2
