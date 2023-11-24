@@ -168,5 +168,5 @@ cython_debug/
 .vscode/
 
 # wandb
-wandb
+wandb/
 
