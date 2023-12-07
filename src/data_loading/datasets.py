@@ -16,6 +16,8 @@ from config.preprocessing import PreprocessingConfig
 from src.data_loading.preprocessing import pad_or_truncate, power2db, logcomp
 from src.data_loading.augmentations import *
 
+import sox
+
 
 class MTATDataset(Dataset):
     def __init__(self, train=True, global_config=GlobalConfig()):
@@ -285,7 +287,16 @@ class FinetuningDataset(Dataset):
                 rf = np.random.uniform(rf_range[0], rf_range[1])
             if self.debug:
                 print(f'stretching by factor {rf}')
-            audio = librosa.effects.time_stretch(audio, rate=rf)
+            # audio = librosa.effects.time_stretch(audio, rate=rf)
+
+            tfm = sox.Transformer()
+            tfm.set_globals(verbosity=0)
+            if abs(rf - 1.0) <= 0.1:
+                tfm.stretch(rf)
+            else:
+                tfm.tempo(rf, quick=True)
+            audio = tfm.build_array(input_array=audio, sample_rate_in=self.preprocessing_config.sr)
+
         else:
             rf = 1
 
@@ -306,6 +317,7 @@ class FinetuningDataset(Dataset):
             batch_size=self.config.batch_size,
             shuffle=True,
             num_workers=self.config.num_workers,
+            pin_memory=True
         )
 
 
