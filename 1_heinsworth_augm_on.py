@@ -7,6 +7,11 @@ from src.finetuning.finetuning import finetune
 
 import argparse
 
+
+test_dataset = 'heinsworth'
+augm = 'on'
+ratios = ['0.1', '0.2', '0.3', '0.4']
+
 # augmentations ON
 model_name_list = ['pretrained_backbones/augmentations ON/rp0.1/loss_0.0173_it_32018.pt',
                    'pretrained_backbones/augmentations ON/rp0.2/loss_0.0355_it_26172.pt',
@@ -53,7 +58,9 @@ if __name__=="__main__":
         globalconfig.preprocessing_config['rf'] = override_rf
         globalconfig.preprocessing_config['rf_range'] = override_rf
 
-    for model_name in model_name_list:
+    for i,model_name in enumerate(model_name_list):
+
+        globalconfig.finetuning_config['save_path'] = f"checkpoints/fine_tune/{test_dataset+'/augm_'+augm+'/ratio_'+ratios[i]}"
 
         print(f'finetuning from {model_name}...')
 

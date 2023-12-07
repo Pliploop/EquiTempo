@@ -301,7 +301,7 @@ class FinetuningDataset(Dataset):
             rf = 1
 
         # cropping or padding
-        audio = pad_or_truncate(torch.from_numpy(audio), len_audio_n)
+        audio = pad_or_truncate(torch.from_numpy(np.copy(audio)), len_audio_n)
         
         audio = logcomp(self.melgram(audio))
         

@@ -1,4 +1,3 @@
-
 from src.training.train import *
 from src.data_loading.datasets import *
 from torch.utils.tensorboard import SummaryWriter
@@ -8,7 +7,12 @@ from src.finetuning.finetuning import finetune
 
 import argparse
 
-# augmentations ON
+
+test_dataset = 'heinsworth'
+augm = 'off'
+ratios = ['0.1', '0.2', '0.3', '0.4']
+
+# augmentations OFF
 model_name_list = ['pretrained_backbones/augmentations OFF/rp0.1/loss_0.0086_it_34973.pt',
                    'pretrained_backbones/augmentations OFF/rp0.2/loss_0.0149_it_33442.pt',
                    'pretrained_backbones/augmentations OFF/rp0.3/loss_0.0198_it_33454.pt',
@@ -54,7 +58,9 @@ if __name__=="__main__":
         globalconfig.preprocessing_config['rf'] = override_rf
         globalconfig.preprocessing_config['rf_range'] = override_rf
 
-    for model_name in model_name_list:
+    for i,model_name in enumerate(model_name_list):
+
+        globalconfig.finetuning_config['save_path'] = f"checkpoints/fine_tune/{test_dataset+'/augm_'+augm+'/ratio_'+ratios[i]}"
 
         print(f'finetuning from {model_name}...')
 

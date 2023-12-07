@@ -20,7 +20,6 @@ def finetune(model_name, dataset_name_list=None, global_config =None, resume_id 
     if resume_checkpoint:
         model_name = resume_checkpoint
 
-    
     if global_config:
         config = FinetuningConfig(dict=global_config.finetuning_config) 
     else:

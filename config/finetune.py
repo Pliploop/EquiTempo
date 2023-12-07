@@ -3,7 +3,7 @@ from config.template import Config
 
 class FinetuningConfig(Config):
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+        # super().__init__(*args, **kwargs)
 
         self.output_dim = 300
         self.checkpoint_path = "checkpoints"
@@ -17,3 +17,6 @@ class FinetuningConfig(Config):
         self.save_path = "checkpoints/fine_tune"
         self.finetuned_from = ''
         self.save_every = 10
+
+        # if called above, the dictionary that is initialized by using the 'dict' argument (see config/template.py) is overwritten
+        super().__init__(*args, **kwargs)
