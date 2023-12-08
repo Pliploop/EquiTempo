@@ -39,7 +39,7 @@ class FinetuningDatasetConfig(Config):
         }
 
         self.batch_size = 16
-        self.num_workers = 16
+        self.num_workers = 8#16
         self.extension = "wav"
         self.sanity_check_n = None
 

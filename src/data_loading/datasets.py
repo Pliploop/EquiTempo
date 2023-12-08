@@ -208,7 +208,7 @@ class FinetuningDataset(Dataset):
                 ]["name"].apply(
                     lambda x: os.path.join(
                         self.audio_dirs["hainsworth"],
-                        x.split(".")[0] + self.config.extension,
+                        x.split(".")[0] + '.' + self.config.extension,
                     )
                 )
 
@@ -263,7 +263,12 @@ class FinetuningDataset(Dataset):
             len_audio_n_dataset = int(
                 self.preprocessing_config.len_audio_s * sample_rate
             )
-            start_crop = np.random.randint(0, length - len_audio_n_dataset)
+            # in Hainsworth you get a shorter audio file than the required 13.6 seconds. In that case, sample another random valid audio
+            try:
+                start_crop = np.random.randint(0, length - len_audio_n_dataset)
+            except Exception as e:
+                print(e)
+                return self.__getitem__(np.random.randint(0, len(self.annotations)-1))
             audio = audio[start_crop : start_crop + len_audio_n_dataset, 0]
 
         if self.extension == "npy":  ### Nothing here for sample rates of other datasets
