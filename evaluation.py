@@ -69,8 +69,8 @@ def evaluate(model_name, dataset_name=None):
         os.makedirs(experiment_dir)
 
     # save predictions, truths, results, and accuracies as .json files
-    accuracy_1, results_1 = compute_accuracy_1(truths, preds, tol=0.08)
-    accuracy_2, results_2 = compute_accuracy_2(truths, preds, tol=0.08)
+    accuracy_1, results_1 = compute_accuracy_1(truths, preds, tol=0.04)
+    accuracy_2, results_2 = compute_accuracy_2(truths, preds, tol=0.04)
 
     results = {
         # "preds": preds,
