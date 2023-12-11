@@ -308,6 +308,7 @@ class FinetuningDataset(Dataset):
         # cropping or padding
         audio = pad_or_truncate(torch.from_numpy(np.copy(audio)), len_audio_n)
         
+        print(audio.shape)
         audio = logcomp(self.melgram(audio))
         
         return {
@@ -357,7 +358,7 @@ class EvaluationDataset(Dataset):
         elif dataset_name == "giantsteps":
             self.annotations["audio_path"] = self.annotations["name"].apply(
                 lambda x: os.path.join(
-                    self.audio_dirs["giantsteps"], x + "." + self.config.extension
+                    self.audio_dirs["giantsteps"], str(x) + ".LOFI." + self.config.extension
                 )
             )
         elif dataset_name == "hainsworth":
@@ -406,37 +407,52 @@ class EvaluationDataset(Dataset):
             audio, sample_rate = sf.read(
                 audio_path, stop=None, dtype="float32", always_2d=True
             )
-            start_crop = np.random.randint(0, length - len_audio_n_dataset)
-            audio = audio[start_crop : start_crop + len_audio_n_dataset, 0]
+            # start_crop = np.random.randint(0, length - len_audio_n_dataset)
+            # audio = audio[start_crop : start_crop + len_audio_n_dataset, 0]
 
         if self.extension == "npy":
             audio = np.load(audio_path)
             length = audio.shape[-1]
             sample_rate = self.preprocessing_config.dataset_sr
-            start_crop = np.random.randint(0, length - len_audio_n_dataset)
-            audio = audio[start_crop : start_crop + len_audio_n_dataset, 0]
+            # start_crop = np.random.randint(0, length - len_audio_n_dataset)
+            # audio = audio[start_crop : start_crop + len_audio_n_dataset, 0]
 
         if sample_rate != self.preprocessing_config.sr:
             audio = soxr.resample(audio, samplerate, self.preprocessing_config.sr)
-
+            
+        audio = torch.from_numpy(audio)
+        try:
+            audio = torch.split(audio, len_audio_n, dim=0)[:-1]
+        except Exception as e:
+            print(e)
+            return self[idx+1]
+        
+    
+        melgram = [logcomp(self.melgram(x.squeeze())) for x in audio]
+        if len(melgram) == 0:
+            return self[idx+1]
+        melgram = torch.stack(melgram, dim=0)
         # time stretching
-        if self.stretch:
-            rf_range = self.preprocessing_config.rf_range
-            rf = np.random.uniform(rf_range[0], rf_range[1])
-            audio = librosa.effects.time_stretch(audio, rate=rf)
-        else:
-            rf = 1.0
+        # if self.stretch:
+        #     rf_range = self.preprocessing_config.rf_range
+        #     rf = np.random.uniform(rf_range[0], rf_range[1])
+        #     audio = librosa.effects.time_stretch(audio, rate=rf)
+        # else:
+        #     rf = 1.0
 
         # cropping or padding
-        audio = pad_or_truncate(torch.from_numpy(audio), len_audio_n)
+        # audio = pad_or_truncate(torch.from_numpy(audio), len_audio_n)
+        
+        tempo = torch.Tensor([self.annotations.iloc[idx]["tempo"]]).squeeze()
+        tempo = tempo.repeat(melgram.shape[0])
 
         return {
-            "audio": logcomp(self.melgram(audio)),
-            "tempo": self.annotations.iloc[idx]["tempo"],
-            "rf": rf,
+            "audio": melgram,
+            "tempo": tempo,
+            "rf": torch.ones_like(tempo),
         }
 
     def create_dataloader(self):
         return DataLoader(
-            dataset=self, batch_size=self.config.batch_size, shuffle=False
+            dataset=self, batch_size=1, shuffle=False
         )
