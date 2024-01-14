@@ -61,18 +61,18 @@ if __name__ == "__main__":
             globalconfig.preprocessing_config["rf"] = rf
             globalconfig.preprocessing_config["rf_range"] = [1 - rf, 1 + rf]
 
-        globalconfig.finetuning_config[
-            "save_path"
-        ] = f"checkpoints/fine_tune/var_rf/{test_dataset}/{rf}"
+            globalconfig.finetuning_config[
+                "save_path"
+            ] = f"checkpoints/fine_tune/var_rf/{test_dataset}/{rf}"
 
-        print(f"finetuning from {model_name}, rf={rf}...")
+            print(f"finetuning from {model_name}, rf={rf}...")
 
-        globalconfig.finetuning_config["finetuned_from"] = model_name
+            globalconfig.finetuning_config["finetuned_from"] = model_name
 
-        finetune(
-            model_name=model_name,
-            dataset_name_list=dataset_name_list,
-            global_config=globalconfig,
-            resume_id=args.resume_id,
-            resume_checkpoint=args.resume_checkpoint,
-        )
+            finetune(
+                model_name=model_name,
+                dataset_name_list=dataset_name_list,
+                global_config=globalconfig,
+                resume_id=args.resume_id,
+                resume_checkpoint=args.resume_checkpoint,
+            )

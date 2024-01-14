@@ -28,14 +28,16 @@ def evaluate(model_name, dataset_name=None):
     device = torch.device(
         "cuda" if torch.cuda.is_available() and config.device == "cuda" else "cpu"
     )
-    print('device', device)
+    print("device", device)
 
     if model_name[-3:] != ".pt":
         model_name += ".pt"
 
     model_path = model_name
     model_path = model_name
-    model, optimizer, scaler, it, epoch = Trainer(override_wandb=False).init_model(model_path)
+    model, optimizer, scaler, it, epoch = Trainer(override_wandb=False).init_model(
+        model_path
+    )
     # model = Siamese().to(device)
     # model.load_state_dict(torch.load(model_path,map_location=device)['gen_state_dict'])
 
@@ -51,10 +53,14 @@ def evaluate(model_name, dataset_name=None):
             audio = item_dict["audio"].squeeze(0).to(device)
             tempo = item_dict["tempo"].squeeze().to(device)
             rf = item_dict["rf"].to(device)
-            classification_pred, _ = model(audio)## logits of shape [audio_split, 300]
-            classification_pred = F.softmax(classification_pred, dim=1)## softmax of shape [audio_split, 300
-            classification_pred = torch.mean(classification_pred, dim=0)## mean of shape [300]
-            
+            classification_pred, _ = model(audio)  ## logits of shape [audio_split, 300]
+            classification_pred = F.softmax(
+                classification_pred, dim=1
+            )  ## softmax of shape [audio_split, 300
+            classification_pred = torch.mean(
+                classification_pred, dim=0
+            )  ## mean of shape [300]
+
             preds.append(torch.argmax(classification_pred).item())
             truths.append((tempo * rf).cpu().numpy()[0][0])
             # print(f"pred: {torch.argmax(classification_pred).item()}, truth: {(tempo * rf).cpu().numpy()[0][0]}")
@@ -84,7 +90,7 @@ def evaluate(model_name, dataset_name=None):
 
     with open(f"{experiment_dir}/results.json", "w") as f:
         json.dump(results, f)
-        
+
     return accuracy_1, accuracy_2
 
 
@@ -97,60 +103,67 @@ if __name__ == "__main__":
     # dataset_name = args.dataset_name
 
     # evaluate(args.model_name, dataset_name)
-    
-    dataset_names = ['giantsteps','gtzan','hainsworth']
-    augmentations = ['off','on']
+
+    # dataset_names = ['giantsteps','gtzan','hainsworth']
+    dataset_names = ["hainsworth"]
+    augmentations = ["off", "on"]
     model_names = [
-        [['checkpoints/fine_tune/giantsteps/augm_off/ratio_0.1/model_eternal-donkey-39_finetune_HAI_GTZ/latest.pt',
-        'checkpoints/fine_tune/giantsteps/augm_off/ratio_0.2/model_eternal-donkey-39_finetune_finetune_HAI_GTZ/latest.pt',
-        'checkpoints/fine_tune/giantsteps/augm_off/ratio_0.3/model_eternal-donkey-39_finetune_finetune_finetune_HAI_GTZ/latest.pt',
-        'checkpoints/fine_tune/giantsteps/augm_off/ratio_0.4/model_eternal-donkey-39_finetune_finetune_finetune_finetune_HAI_GTZ/latest.pt'],
-        ['checkpoints/fine_tune/giantsteps/augm_on/ratio_0.1/model_mild-wind-38_finetune_HAI_GTZ/latest.pt',
-         'checkpoints/fine_tune/giantsteps/augm_on/ratio_0.2/model_mild-wind-38_finetune_finetune_HAI_GTZ/latest.pt',
-         'checkpoints/fine_tune/giantsteps/augm_on/ratio_0.3/model_mild-wind-38_finetune_finetune_finetune_HAI_GTZ/latest.pt',
-         'checkpoints/fine_tune/giantsteps/augm_on/ratio_0.4/model_mild-wind-38_finetune_finetune_finetune_finetune_HAI_GTZ/latest.pt']],
-        [['checkpoints/fine_tune/gtzan/augm_off/ratio_0.1/model_glorious-disco-36_finetune_HAI_GIA/latest.pt',
-        'checkpoints/fine_tune/gtzan/augm_off/ratio_0.2/model_glorious-disco-36_finetune_finetune_HAI_GIA/latest.pt',
-        'checkpoints/fine_tune/gtzan/augm_off/ratio_0.3/model_glorious-disco-36_finetune_finetune_finetune_HAI_GIA/latest.pt',
-        'checkpoints/fine_tune/gtzan/augm_off/ratio_0.4/model_glorious-disco-36_finetune_finetune_finetune_finetune_HAI_GIA/latest.pt'],
-        ['checkpoints/fine_tune/gtzan/augm_on/ratio_0.1/model_quiet-resonance-35_finetune_HAI_GIA/latest.pt',
-         'checkpoints/fine_tune/gtzan/augm_on/ratio_0.2/model_quiet-resonance-35_finetune_finetune_HAI_GIA/latest.pt',
-         'checkpoints/fine_tune/gtzan/augm_on/ratio_0.3/model_quiet-resonance-35_finetune_finetune_finetune_HAI_GIA/latest.pt',
-         'checkpoints/fine_tune/gtzan/augm_on/ratio_0.4/model_quiet-resonance-35_finetune_finetune_finetune_finetune_HAI_GIA/latest.pt']],
-        [['checkpoints/fine_tune/hainsworth/augm_off/ratio_0.1/model_blooming-frost-28_finetune_GTZ_GIA/latest.pt',
-        'checkpoints/fine_tune/hainsworth/augm_off/ratio_0.2/model_blooming-frost-28_finetune_finetune_GTZ_GIA/latest.pt',
-        'checkpoints/fine_tune/hainsworth/augm_off/ratio_0.3/model_blooming-frost-28_finetune_finetune_finetune_GTZ_GIA/latest.pt',
-        'checkpoints/fine_tune/hainsworth/augm_off/ratio_0.4/model_blooming-frost-28_finetune_finetune_finetune_finetune_GTZ_GIA/latest.pt'],
-        ['checkpoints/fine_tune/hainsworth/augm_on/ratio_0.1/model_youthful-pond-27_finetune_GTZ_GIA/latest.pt',
-         'checkpoints/fine_tune/hainsworth/augm_on/ratio_0.2/model_youthful-pond-27_finetune_finetune_GTZ_GIA/latest.pt',
-         'checkpoints/fine_tune/hainsworth/augm_on/ratio_0.3/model_youthful-pond-27_finetune_finetune_finetune_GTZ_GIA/latest.pt',
-         'checkpoints/fine_tune/hainsworth/augm_on/ratio_0.4/model_youthful-pond-27_finetune_finetune_finetune_finetune_GTZ_GIA/latest.pt']]
+        "checkpoints/fine_tune/model__finetune_GTZ_GIA/it_9256_loss_2.6955_acc10.8_acc20.93.pt"
     ]
-    
+
+    # model_names = [
+    #     [['checkpoints/fine_tune/giantsteps/augm_off/ratio_0.1/model_eternal-donkey-39_finetune_HAI_GTZ/latest.pt',
+    #     'checkpoints/fine_tune/giantsteps/augm_off/ratio_0.2/model_eternal-donkey-39_finetune_finetune_HAI_GTZ/latest.pt',
+    #     'checkpoints/fine_tune/giantsteps/augm_off/ratio_0.3/model_eternal-donkey-39_finetune_finetune_finetune_HAI_GTZ/latest.pt',
+    #     'checkpoints/fine_tune/giantsteps/augm_off/ratio_0.4/model_eternal-donkey-39_finetune_finetune_finetune_finetune_HAI_GTZ/latest.pt'],
+    #     ['checkpoints/fine_tune/giantsteps/augm_on/ratio_0.1/model_mild-wind-38_finetune_HAI_GTZ/latest.pt',
+    #      'checkpoints/fine_tune/giantsteps/augm_on/ratio_0.2/model_mild-wind-38_finetune_finetune_HAI_GTZ/latest.pt',
+    #      'checkpoints/fine_tune/giantsteps/augm_on/ratio_0.3/model_mild-wind-38_finetune_finetune_finetune_HAI_GTZ/latest.pt',
+    #      'checkpoints/fine_tune/giantsteps/augm_on/ratio_0.4/model_mild-wind-38_finetune_finetune_finetune_finetune_HAI_GTZ/latest.pt']],
+    #     [['checkpoints/fine_tune/gtzan/augm_off/ratio_0.1/model_glorious-disco-36_finetune_HAI_GIA/latest.pt',
+    #     'checkpoints/fine_tune/gtzan/augm_off/ratio_0.2/model_glorious-disco-36_finetune_finetune_HAI_GIA/latest.pt',
+    #     'checkpoints/fine_tune/gtzan/augm_off/ratio_0.3/model_glorious-disco-36_finetune_finetune_finetune_HAI_GIA/latest.pt',
+    #     'checkpoints/fine_tune/gtzan/augm_off/ratio_0.4/model_glorious-disco-36_finetune_finetune_finetune_finetune_HAI_GIA/latest.pt'],
+    #     ['checkpoints/fine_tune/gtzan/augm_on/ratio_0.1/model_quiet-resonance-35_finetune_HAI_GIA/latest.pt',
+    #      'checkpoints/fine_tune/gtzan/augm_on/ratio_0.2/model_quiet-resonance-35_finetune_finetune_HAI_GIA/latest.pt',
+    #      'checkpoints/fine_tune/gtzan/augm_on/ratio_0.3/model_quiet-resonance-35_finetune_finetune_finetune_HAI_GIA/latest.pt',
+    #      'checkpoints/fine_tune/gtzan/augm_on/ratio_0.4/model_quiet-resonance-35_finetune_finetune_finetune_finetune_HAI_GIA/latest.pt']],
+    #     [['checkpoints/fine_tune/hainsworth/augm_off/ratio_0.1/model_blooming-frost-28_finetune_GTZ_GIA/latest.pt',
+    #     'checkpoints/fine_tune/hainsworth/augm_off/ratio_0.2/model_blooming-frost-28_finetune_finetune_GTZ_GIA/latest.pt',
+    #     'checkpoints/fine_tune/hainsworth/augm_off/ratio_0.3/model_blooming-frost-28_finetune_finetune_finetune_GTZ_GIA/latest.pt',
+    #     'checkpoints/fine_tune/hainsworth/augm_off/ratio_0.4/model_blooming-frost-28_finetune_finetune_finetune_finetune_GTZ_GIA/latest.pt'],
+    #     ['checkpoints/fine_tune/hainsworth/augm_on/ratio_0.1/model_youthful-pond-27_finetune_GTZ_GIA/latest.pt',
+    #      'checkpoints/fine_tune/hainsworth/augm_on/ratio_0.2/model_youthful-pond-27_finetune_finetune_GTZ_GIA/latest.pt',
+    #      'checkpoints/fine_tune/hainsworth/augm_on/ratio_0.3/model_youthful-pond-27_finetune_finetune_finetune_GTZ_GIA/latest.pt',
+    #      'checkpoints/fine_tune/hainsworth/augm_on/ratio_0.4/model_youthful-pond-27_finetune_finetune_finetune_finetune_GTZ_GIA/latest.pt']]
+    # ]
+
     records = []
-    
-    for i,dataset in enumerate(dataset_names):
+
+    for i, dataset in enumerate(dataset_names):
         dataset_name = dataset
-        for j,augmentation in enumerate(augmentations):
+        for j, augmentation in enumerate(augmentations):
             augmentation = augmentation
-            for k,model in enumerate(model_names[i][j]):
+            for k, model in enumerate(model_names):
                 model_name = model
-                ratio = float(model_name.split('/')[4].split('_')[-1])
-                print(f"Dataset: {dataset_name}, Augmentation: {augmentation}, Model: {model_name}")
-                acc1,acc2 = evaluate(model_name, dataset_name)
-                records.append({
-                    'dataset': dataset_name,
-                    'ratio': ratio,
-                    'augmentation': augmentation,
-                    'model': model_name,
-                    'acc1': acc1,
-                    'acc2': acc2
-                })
-    
+                print(
+                    f"Dataset: {dataset_name}, Augmentation: {augmentation}, Model: {model_name}"
+                )
+                acc1, acc2 = evaluate(model_name, dataset_name)
+                records.append(
+                    {
+                        "dataset": dataset_name,
+                        "augmentation": augmentation,
+                        "model": model_name,
+                        "acc1": acc1,
+                        "acc2": acc2,
+                    }
+                )
+                print(records)
+
     # save records as pandas dataframe to csv but also a a json file
-    df = pd.DataFrame.from_records(records)
-    df.to_csv('results.csv')
-    df.to_json('results.json')
-    
-    print(df)
-    
+    # df = pd.DataFrame.from_records(records)
+    # df.to_csv("results.csv")
+    # df.to_json("results.json")
+
+    # print(df)
