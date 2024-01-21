@@ -5,6 +5,7 @@ import librosa
 import numpy as np
 import pandas as pd
 import soundfile as sf
+import sox
 import soxr
 import torch
 import torchaudio.transforms as T
@@ -13,10 +14,8 @@ from torch.utils.data import DataLoader, Dataset
 from config.dataset import EvaluationDatasetConfig, FinetuningDatasetConfig, MTATConfig
 from config.full import GlobalConfig
 from config.preprocessing import PreprocessingConfig
-from src.data_loading.preprocessing import pad_or_truncate, power2db, logcomp
 from src.data_loading.augmentations import *
-
-import sox
+from src.data_loading.preprocessing import logcomp, pad_or_truncate, power2db
 
 
 class MTATDataset(Dataset):
@@ -143,16 +142,31 @@ class MTATDataset(Dataset):
             mel1 = self.spectrogram_transforms.transform(mel1)
             mel2 = self.spectrogram_transforms.transform(mel2)
 
-        mel1 = logcomp(mel1)  
-        mel2 = logcomp(mel2)  
+        mel1 = logcomp(mel1)
+        mel2 = logcomp(mel2)
 
         return {"audio_1": mel1, "audio_2": mel2, "rp_1": rp_1, "rp_2": rp_2}
 
-    def create_dataloader(self, split = 0.1):
-        train_dataset, val_dataset = torch.utils.data.random_split(self,[1-split,split])
-        train_dataloader = DataLoader(dataset=train_dataset,batch_size=self.config.batch_size, shuffle=True, num_workers=self.config.num_workers, drop_last=True)
-        val_dataloader = DataLoader(dataset=val_dataset,batch_size=self.config.batch_size, shuffle=True, num_workers=self.config.num_workers, drop_last=True)
-        return train_dataloader,val_dataloader
+    def create_dataloader(self, split=0.1):
+        train_dataset, val_dataset = torch.utils.data.random_split(
+            self, [1 - split, split]
+        )
+        train_dataloader = DataLoader(
+            dataset=train_dataset,
+            batch_size=self.config.batch_size,
+            shuffle=True,
+            num_workers=self.config.num_workers,
+            drop_last=True,
+        )
+        val_dataloader = DataLoader(
+            dataset=val_dataset,
+            batch_size=self.config.batch_size,
+            shuffle=True,
+            num_workers=self.config.num_workers,
+            drop_last=True,
+        )
+        return train_dataloader, val_dataloader
+
 
 class FinetuningDataset(Dataset):
     def __init__(
@@ -160,7 +174,7 @@ class FinetuningDataset(Dataset):
         dataset_name_list: list,
         stretch: bool = True,
         global_config=GlobalConfig(),
-        debug = False,
+        debug=False,
     ):
         self.config = FinetuningDatasetConfig(
             dict=global_config.finetuning_dataset_config
@@ -208,7 +222,7 @@ class FinetuningDataset(Dataset):
                 ]["name"].apply(
                     lambda x: os.path.join(
                         self.audio_dirs["hainsworth"],
-                        x.split(".")[0] + '.' + self.config.extension,
+                        x.split(".")[0] + "." + self.config.extension,
                     )
                 )
 
@@ -268,7 +282,7 @@ class FinetuningDataset(Dataset):
                 start_crop = np.random.randint(0, length - len_audio_n_dataset)
             except Exception as e:
                 print(e)
-                return self.__getitem__(np.random.randint(0, len(self.annotations)-1))
+                return self.__getitem__(np.random.randint(0, len(self.annotations) - 1))
             audio = audio[start_crop : start_crop + len_audio_n_dataset, 0]
 
         if self.extension == "npy":  ### Nothing here for sample rates of other datasets
@@ -280,7 +294,9 @@ class FinetuningDataset(Dataset):
 
         if sample_rate != self.preprocessing_config.sr:
             if self.debug:
-                print(f'resampling from {sample_rate} to {self.preprocessing_config.sr}')
+                print(
+                    f"resampling from {sample_rate} to {self.preprocessing_config.sr}"
+                )
             audio = soxr.resample(audio, sample_rate, self.preprocessing_config.sr)
 
         # time stretching
@@ -291,7 +307,7 @@ class FinetuningDataset(Dataset):
             while rf > 299 / self.annotations.iloc[idx]["tempo"]:
                 rf = np.random.uniform(rf_range[0], rf_range[1])
             if self.debug:
-                print(f'stretching by factor {rf}')
+                print(f"stretching by factor {rf}")
             # audio = librosa.effects.time_stretch(audio, rate=rf)
 
             tfm = sox.Transformer()
@@ -300,17 +316,19 @@ class FinetuningDataset(Dataset):
                 tfm.stretch(rf)
             else:
                 tfm.tempo(rf, quick=True)
-            audio = tfm.build_array(input_array=audio, sample_rate_in=self.preprocessing_config.sr)
+            audio = tfm.build_array(
+                input_array=audio, sample_rate_in=self.preprocessing_config.sr
+            )
 
         else:
             rf = 1
 
         # cropping or padding
         audio = pad_or_truncate(torch.from_numpy(np.copy(audio)), len_audio_n)
-        
+
         print(audio.shape)
         audio = logcomp(self.melgram(audio))
-        
+
         return {
             "audio": audio,
             "tempo": self.annotations.iloc[idx]["tempo"],
@@ -323,7 +341,7 @@ class FinetuningDataset(Dataset):
             batch_size=self.config.batch_size,
             shuffle=True,
             num_workers=self.config.num_workers,
-            pin_memory=True
+            pin_memory=True,
         )
 
 
@@ -358,7 +376,8 @@ class EvaluationDataset(Dataset):
         elif dataset_name == "giantsteps":
             self.annotations["audio_path"] = self.annotations["name"].apply(
                 lambda x: os.path.join(
-                    self.audio_dirs["giantsteps"], str(x) + ".LOFI." + self.config.extension
+                    self.audio_dirs["giantsteps"],
+                    str(x) + ".LOFI." + self.config.extension,
                 )
             )
         elif dataset_name == "hainsworth":
@@ -419,18 +438,17 @@ class EvaluationDataset(Dataset):
 
         if sample_rate != self.preprocessing_config.sr:
             audio = soxr.resample(audio, samplerate, self.preprocessing_config.sr)
-            
+
         audio = torch.from_numpy(audio)
         try:
             audio = torch.split(audio, len_audio_n, dim=0)[:-1]
         except Exception as e:
             print(e)
-            return self[idx+1]
-        
-    
+            return self[idx + 1]
+
         melgram = [logcomp(self.melgram(x.squeeze())) for x in audio]
         if len(melgram) == 0:
-            return self[idx+1]
+            return self[idx + 1]
         melgram = torch.stack(melgram, dim=0)
         # time stretching
         # if self.stretch:
@@ -442,7 +460,7 @@ class EvaluationDataset(Dataset):
 
         # cropping or padding
         # audio = pad_or_truncate(torch.from_numpy(audio), len_audio_n)
-        
+
         tempo = torch.Tensor([self.annotations.iloc[idx]["tempo"]]).squeeze()
         tempo = tempo.repeat(melgram.shape[0])
 
@@ -453,6 +471,165 @@ class EvaluationDataset(Dataset):
         }
 
     def create_dataloader(self):
-        return DataLoader(
-            dataset=self, batch_size=1, shuffle=False
+        return DataLoader(dataset=self, batch_size=1, shuffle=False)
+
+
+class MetaDataset(Dataset):
+    """GTZAN meta dataset, split based on genre.
+
+    Meta task design:
+    For each metatask, we want to fill all tempo classes. Not all of them will originally be filled,
+    and some might have more than one track. If a tempo class is empty, we will randomly choose 1
+    track out of the 4 closest ones in tempo, and stretch it to the target tempo.  When more than 1
+    track per class exists, we'll get a random one. We'll keep 300  items per dataset (that change
+    per epoch since there's a random crop and random closest song), corresponding to the 300 tempo
+    classes.
+    """
+
+    def __init__(self, genre, global_config=GlobalConfig()):
+        self.config = EvaluationDatasetConfig(
+            dict=global_config.evaluation_dataset_config
         )
+        self.preprocessing_config = PreprocessingConfig(
+            dict=global_config.preprocessing_config
+        )
+        self.extension = self.config.extension
+        self.audio_dirs = self.config.audio_dirs
+        self.annotations = pd.read_csv(self.config.annotation_dirs["gtzan"], sep=",")
+
+        self.annotations["tempo"] = self.annotations["tempo"].apply(float)
+
+        # create an audio_path column
+        self.annotations["audio_path"] = self.annotations["name"].apply(
+            lambda x: os.path.join(
+                self.audio_dirs["gtzan"],
+                x.split(".")[0],
+                x + "." + self.config.extension,
+            )
+        )
+
+        # keep only tracks of the specified genre
+        self.annotations = self.annotations[self.annotations["genre"] == genre]
+
+        # keep all tracks whose tempo is under 300
+        self.annotations = self.annotations[self.annotations["tempo"] < 300]
+
+        # sort annotations by tempo
+        self.annotations = self.annotations.sort_values(by=["tempo"])
+
+        self.melgram = T.MelSpectrogram(
+            sample_rate=44100,
+            f_min=30,
+            f_max=17000,
+            n_mels=81,
+            n_fft=2048,
+            win_length=2048,
+            hop_length=441,
+            power=1,
+        )
+
+    def __len__(self):
+        n_tracks = len(self.annotations)
+        n_empty_tempo_classes = 0
+        for tempo in range(30, 301):
+            if (
+                len(self.annotations[int(np.round(self.annotations["tempo"])) == tempo])
+                == 0
+            ):
+                n_empty_tempo_classes += 1
+        return n_tracks + n_empty_tempo_classes
+
+    def __getitem__(self, idx):  # the index refers to the tempo class
+        # get track whose int(round(tempo)) == idx. If it doesn't exist, get
+        # the closest one. If there are multiple, get a random one.
+        try:
+            audio_path = (
+                self.annotations[int(np.round(self.annotations["tempo"])) == idx]
+                .sample()["audio_path"]
+                .iloc[0]
+            )
+            tempo = idx
+        except Exception:
+            top3_audio_paths = []
+            # get track with the closest tempo
+            closest_index = (
+                (self.annotations["tempo"] - idx).abs().argsort()[:1].iloc[0]
+            )
+            top3_audio_paths.append(self.annotations.loc[closest_index, "audio_path"])
+
+            # since the df is sorted by tempo, the tracks before and after
+            # should also be the top 3 closest ones
+            if closest_index > 0:
+                top3_audio_paths.append(
+                    self.annotations.loc[closest_index - 1, "audio_path"]
+                )
+            if closest_index < len(self.annotations) - 1:
+                top3_audio_paths.append(
+                    self.annotations.loc[closest_index + 1, "audio_path"]
+                )
+
+            # select a random one of the 3
+            audio_path = random.choice(top3_audio_paths)
+
+            # get tempo
+            idx = self.annotations[self.annotations["audio_path"] == audio_path].index[
+                0
+            ]
+            tempo = self.annotations.loc[idx, "tempo"]
+
+        # read audio
+        len_audio_n = self.preprocessing_config.len_audio_n
+        if self.extension == "mp3" or self.extension == "wav":
+            info = sf.info(audio_path)
+            if self.extension == "mp3":
+                length = info.frames - self.preprocessing_config.pad_mp3
+            else:
+                length = info.frames
+            samplerate = info.samplerate
+            audio, sample_rate = sf.read(
+                audio_path, stop=None, dtype="float32", always_2d=True
+            )
+            # start_crop = np.random.randint(0, length - len_audio_n_dataset)
+            # audio = audio[start_crop : start_crop + len_audio_n_dataset, 0]
+
+        if self.extension == "npy":
+            audio = np.load(audio_path)
+            length = audio.shape[-1]
+            sample_rate = self.preprocessing_config.dataset_sr
+            # start_crop = np.random.randint(0, length - len_audio_n_dataset)
+            # audio = audio[start_crop : start_crop + len_audio_n_dataset, 0]
+
+        if sample_rate != self.preprocessing_config.sr:
+            audio = soxr.resample(audio, samplerate, self.preprocessing_config.sr)
+
+        # stretch if not exactly the target tempo
+        if tempo != idx:
+            rf = tempo / idx
+            audio = librosa.effects.time_stretch(audio, rate=rf)
+
+        # cropping or padding
+        audio = pad_or_truncate(torch.from_numpy(audio), len_audio_n)
+
+        audio = torch.from_numpy(audio)
+        try:
+            audio = torch.split(audio, len_audio_n, dim=0)[:-1]
+        except Exception as e:
+            print(e)
+            return self[idx + 1]
+
+        melgram = [logcomp(self.melgram(x.squeeze())) for x in audio]
+        if len(melgram) == 0:
+            return self[idx + 1]
+        melgram = torch.stack(melgram, dim=0)
+
+        tempo = torch.Tensor([self.annotations.iloc[idx]["tempo"]]).squeeze()
+        tempo = tempo.repeat(melgram.shape[0])
+
+        return {
+            "audio": melgram,
+            "tempo": idx,
+            "rf": torch.ones_like(tempo),
+        }
+
+    def create_dataloader(self):
+        return DataLoader(dataset=self, batch_size=1, shuffle=False)
