@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import wandb
 from learn2learn.algorithms import MAML
+from tqdm import tqdm
 
 from config.finetune import FinetuningConfig
 from config.full import GlobalConfig
@@ -72,6 +73,7 @@ def meta_train(global_config=None):
     idx_list = list(range(len(gtzan_genres)))
 
     for epoch in range(config.epochs):
+        print(f"Epoch {epoch},", end=" ")
         # shuffle the list of ints
         new_idx_list = np.random.shuffle(idx_list)
 
@@ -126,3 +128,9 @@ def meta_train(global_config=None):
                         {f"{gtzan_genres[task_id]} val loss": meta_loss.item()},
                         step=it,
                     )
+
+        print(
+            f"Meta loss: {meta_loss.item()}",
+            f"acc_1_val: {acc_1_val}",
+            f"acc_2_val: {acc_2_val}",
+        )
