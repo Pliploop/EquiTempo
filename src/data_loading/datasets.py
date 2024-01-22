@@ -15,6 +15,7 @@ from config.full import GlobalConfig
 from config.preprocessing import PreprocessingConfig
 from src.data_loading.augmentations import *
 from src.data_loading.preprocessing import logcomp, pad_or_truncate, power2db
+from src.utils.stretch import stretch
 
 
 class MTATDataset(Dataset):
@@ -533,6 +534,26 @@ class MetaDataset(Dataset):
         return 300
 
     def __getitem__(self, idx):  # the index refers to the tempo class
+        # ONLY WORKS FOR BATCH_SIZE = 1
+        len_audio_n = self.preprocessing_config.len_audio_n
+
+        # if tempo < 24, use an empty signal
+        if idx < 24:
+            audio = np.array([0.0])
+            # cropping or padding
+            audio = pad_or_truncate(torch.from_numpy(audio), len_audio_n)
+
+            melgram = self.melgram(audio)
+            melgram = logcomp(melgram)
+            if len(melgram) == 0:
+                return self[idx]
+
+            return {
+                "audio": melgram,
+                "tempo": idx,
+                "rf": 1,
+            }
+
         # get track whose int(round(tempo)) is equal to idx
         try:
             audio_path = (
@@ -555,13 +576,12 @@ class MetaDataset(Dataset):
             )
 
             # get tempo
-            idx = self.annotations[self.annotations["audio_path"] == audio_path].index[
-                0
-            ]
-            tempo = self.annotations.loc[idx, "tempo"]
+            track_idx = self.annotations[
+                self.annotations["audio_path"] == audio_path
+            ].index[0]
+            tempo = self.annotations.loc[track_idx, "tempo"]
 
         # read audio
-        len_audio_n = self.preprocessing_config.len_audio_n
         if self.extension == "mp3" or self.extension == "wav":
             info = sf.info(audio_path)
             if self.extension == "mp3":
@@ -585,34 +605,27 @@ class MetaDataset(Dataset):
         if sample_rate != self.preprocessing_config.sr:
             audio = soxr.resample(audio, samplerate, self.preprocessing_config.sr)
 
+        audio = audio.squeeze()
+
         # stretch if not exactly the target tempo
-        if tempo != idx:
-            rf = tempo / idx
+        if int(round(tempo)) != idx:
+            rf = idx / tempo
             audio = librosa.effects.time_stretch(audio, rate=rf)
 
         # cropping or padding
         audio = pad_or_truncate(torch.from_numpy(audio), len_audio_n)
 
-        audio = torch.from_numpy(audio)
-        try:
-            audio = torch.split(audio, len_audio_n, dim=0)[:-1]
-        except Exception as e:
-            print(e)
-            return self[idx + 1]
-
-        melgram = [logcomp(self.melgram(x.squeeze())) for x in audio]
+        melgram = self.melgram(audio)
         if len(melgram) == 0:
-            return self[idx + 1]
-        melgram = torch.stack(melgram, dim=0)
+            return self[idx]
 
-        tempo = torch.Tensor([self.annotations.iloc[idx]["tempo"]]).squeeze()
-        tempo = tempo.repeat(melgram.shape[0])
+        melgram = logcomp(melgram)
 
         return {
             "audio": melgram,
             "tempo": idx,
-            "rf": torch.ones_like(tempo),
+            "rf": rf,
         }
 
     def create_dataloader(self):
-        return DataLoader(dataset=self, batch_size=1, shuffle=False)
+        return DataLoader(dataset=self, batch_size=1, shuffle=True)
