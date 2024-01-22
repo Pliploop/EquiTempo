@@ -5,7 +5,6 @@ import librosa
 import numpy as np
 import pandas as pd
 import soundfile as sf
-import sox
 import soxr
 import torch
 import torchaudio.transforms as T
@@ -508,8 +507,10 @@ class MetaDataset(Dataset):
             )
         )
 
-        # keep only tracks of the specified genre
-        self.annotations = self.annotations[self.annotations["genre"] == genre]
+        # keep only tracks of the specified genre. the genre is included in the audiopath
+        self.annotations = self.annotations[
+            self.annotations["audio_path"].str.contains(genre)
+        ]
 
         # keep all tracks whose tempo is under 300
         self.annotations = self.annotations[self.annotations["tempo"] < 300]
@@ -529,47 +530,29 @@ class MetaDataset(Dataset):
         )
 
     def __len__(self):
-        n_tracks = len(self.annotations)
-        n_empty_tempo_classes = 0
-        for tempo in range(30, 301):
-            if (
-                len(self.annotations[int(np.round(self.annotations["tempo"])) == tempo])
-                == 0
-            ):
-                n_empty_tempo_classes += 1
-        return n_tracks + n_empty_tempo_classes
+        return 300
 
     def __getitem__(self, idx):  # the index refers to the tempo class
-        # get track whose int(round(tempo)) == idx. If it doesn't exist, get
-        # the closest one. If there are multiple, get a random one.
+        # get track whose int(round(tempo)) is equal to idx
         try:
             audio_path = (
-                self.annotations[int(np.round(self.annotations["tempo"])) == idx]
-                .sample()["audio_path"]
+                self.annotations[round(self.annotations["tempo"]) == idx]["audio_path"]
+                .sample(
+                    n=1
+                )  # get a random one if multiple, not the first one necessarily
                 .iloc[0]
             )
             tempo = idx
         except Exception:
-            top3_audio_paths = []
-            # get track with the closest tempo
-            closest_index = (
-                (self.annotations["tempo"] - idx).abs().argsort()[:1].iloc[0]
+            # there's not track with this tempo, so select a random track out of the 3
+            # with the closest tempo to idx
+            audio_path = (
+                self.annotations.iloc[
+                    (self.annotations["tempo"] - idx).abs().argsort()[:3]
+                ]["audio_path"]
+                .sample(n=1)
+                .iloc[0]
             )
-            top3_audio_paths.append(self.annotations.loc[closest_index, "audio_path"])
-
-            # since the df is sorted by tempo, the tracks before and after
-            # should also be the top 3 closest ones
-            if closest_index > 0:
-                top3_audio_paths.append(
-                    self.annotations.loc[closest_index - 1, "audio_path"]
-                )
-            if closest_index < len(self.annotations) - 1:
-                top3_audio_paths.append(
-                    self.annotations.loc[closest_index + 1, "audio_path"]
-                )
-
-            # select a random one of the 3
-            audio_path = random.choice(top3_audio_paths)
 
             # get tempo
             idx = self.annotations[self.annotations["audio_path"] == audio_path].index[
