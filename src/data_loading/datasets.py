@@ -486,7 +486,8 @@ class MetaDataset(Dataset):
     classes.
     """
 
-    def __init__(self, genre, global_config=GlobalConfig()):
+    def __init__(self, genre, n_tracks=300, global_config=GlobalConfig()):
+        self.n_tracks = n_tracks
         self.config = EvaluationDatasetConfig(
             dict=global_config.evaluation_dataset_config
         )
@@ -531,7 +532,7 @@ class MetaDataset(Dataset):
         )
 
     def __len__(self):
-        return 300
+        return self.n_tracks
 
     def __getitem__(self, idx):  # the index refers to the tempo class
         # ONLY WORKS FOR BATCH_SIZE = 1

@@ -75,7 +75,7 @@ def meta_train(global_config=None, adaptation_steps=1, batch_size=25):
         "rock",
     ]
 
-    meta_datasets = [MetaDataset(genre=genre) for genre in gtzan_genres]
+    meta_datasets = [MetaDataset(genre=genre, n_tracks=50) for genre in gtzan_genres]
     meta_train_loaders = [dataset.create_dataloader() for dataset in meta_datasets]
     # since there's a lot of randomness in which chunk you sample for a given tempo
     # class, we'll use the same dataset for validation. Overlap should be small
@@ -97,46 +97,58 @@ def meta_train(global_config=None, adaptation_steps=1, batch_size=25):
     # generate a list of ints from 0 to len(gtzan_genres) - 1
     idx_list = list(range(len(gtzan_genres)))
 
-    for epoch in range(config.epochs):
+    for epoch in range(500):
+        optimizer.zero_grad()
         print(f"Epoch: {epoch}")
         # shuffle the list in-place
         np.random.shuffle(idx_list)
 
         meta_train_error = 0.0
         meta_train_accuracy = 0.0
-        meta_val_error = 0.0
-        meta_val_accuracy = 0.0
+        meta_valid_error = 0.0
+        meta_valid_accuracy = 0.0
 
         for task_id in idx_list:
             print(f">> Task: {gtzan_genres[task_id]}")
             train_loader = meta_train_loaders[task_id]
             val_loader = meta_val_loaders[task_id]
 
-            task_train_error = 0.0
-            task_train_accuracy = 0.0
+            # for train_batch, val_batch in tqdm(zip(train_loader, val_loader)):
+            #     # compute meta-training loss
+            #     learner = maml.clone()
+            #     val_error, val_accuracy = fast_adaptation(
+            #         model=learner,
+            #         device=device,
+            #         train_batch=train_batch,
+            #         val_batch=val_batch,
+            #         loss_function=loss_function,
+            #         adaptation_steps=adaptation_steps,
+            #     )
 
-            for train_batch, val_batch in tqdm(zip(train_loader, val_loader)):
-                # compute meta-training loss
-                learner = maml.clone()
-                val_error, val_accuracy = fast_adaptation(
-                    model=learner,
-                    device=device,
-                    train_batch=train_batch,
-                    val_batch=val_batch,
-                    loss_function=loss_function,
-                    adaptation_steps=adaptation_steps,
-                )
+            #     task_train_error += val_error.item()
+            #     task_train_accuracy += val_accuracy
 
-                task_train_error += val_error.item()
-                task_train_accuracy += val_accuracy
+            # # Backpropagate errors after accumulating them across all batches of the task
+            # task_train_error /= len(train_loader) / batch_size
+            # task_train_accuracy /= len(train_loader) / batch_size
+            # meta_train_error += task_train_error
+            # meta_train_accuracy += task_train_accuracy
 
-            # Backpropagate errors after accumulating them across all batches of the task
-            task_train_error /= len(train_loader) / batch_size
-            task_train_accuracy /= len(train_loader) / batch_size
-            meta_train_error += task_train_error
-            meta_train_accuracy += task_train_accuracy
+            train_batch = next(iter(train_loader))
+            val_batch = next(iter(val_loader))
+            learner = maml.clone()
+            val_error, val_accuracy = fast_adaptation(
+                model=learner,
+                device=device,
+                train_batch=train_batch,
+                val_batch=val_batch,
+                loss_function=loss_function,
+                adaptation_steps=adaptation_steps,
+            )
 
-            task_train_error.backward()
+            val_error.backward()
+            meta_train_error += val_error.item()
+            meta_train_accuracy += val_accuracy
 
             # Compute meta-validation loss
             try:
@@ -146,44 +158,61 @@ def meta_train(global_config=None, adaptation_steps=1, batch_size=25):
                 meta_train_loader = meta_train_loaders[task_id - 1]
                 meta_val_loader = meta_val_loaders[task_id - 1]
 
-            learner = maml.clone()
-            for train_batch, val_batch in tqdm(zip(meta_train_loader, meta_val_loader)):
-                val_error, val_accuracy = fast_adaptation(
-                    model=learner,
-                    device=device,
-                    train_batch=train_batch,
-                    val_batch=val_batch,
-                    loss_function=loss_function,
-                    adaptation_steps=adaptation_steps,
-                )
-                meta_val_error += val_error.item()
-                meta_val_accuracy += val_accuracy
+        #     learner = maml.clone()
+        #     for train_batch, val_batch in tqdm(zip(meta_train_loader, meta_val_loader)):
+        #         val_error, val_accuracy = fast_adaptation(
+        #             model=learner,
+        #             device=device,
+        #             train_batch=train_batch,
+        #             val_batch=val_batch,
+        #             loss_function=loss_function,
+        #             adaptation_steps=adaptation_steps,
+        #         )
+        #         meta_val_error += val_error.item()
+        #         meta_val_accuracy += val_accuracy
 
-        meta_train_error /= len(gtzan_genres)
-        meta_train_accuracy /= len(gtzan_genres)
-        meta_val_error /= len(gtzan_genres)
-        meta_val_accuracy /= len(gtzan_genres)
+        # meta_train_error /= len(gtzan_genres)
+        # meta_train_accuracy /= len(gtzan_genres)
+        # meta_val_error /= len(gtzan_genres)
+        # meta_val_accuracy /= len(gtzan_genres)
+        train_batch = next(iter(meta_train_loader))
+        val_batch = next(iter(meta_val_loader))
+        learner = maml.clone()
+        val_error, val_accuracy = fast_adaptation(
+            model=learner,
+            device=device,
+            train_batch=train_batch,
+            val_batch=val_batch,
+            loss_function=loss_function,
+            adaptation_steps=adaptation_steps,
+        )
 
-        # print metrics
-        print(f"Meta Train Error: {meta_train_error}")
-        print(f"Meta Train Accuracy: {meta_train_accuracy}")
-        print(f"Meta Val Error: {meta_val_error}")
-        print(f"Meta Val Accuracy: {meta_val_accuracy}")
+        meta_valid_error += val_error.item()
+        meta_valid_accuracy += val_accuracy
+
+        # Print some metrics
+        print("\n")
+        print("Meta Train Error", meta_train_error)
+        print("Meta Train Accuracy", meta_train_accuracy)
+        print("Meta Valid Error", meta_valid_error)
+        print("Meta Valid Accuracy", meta_valid_accuracy)
 
         # averate the accumulated gradients and optimize
         for p in maml.parameters():
-            p.grad.data.mul_(1.0 / len(gtzan_genres))
+            if p.grad is not None:
+                p.grad.data.mul_(1.0 / len(gtzan_genres))
         optimizer.step()
 
-    save_model(
-        config,
-        loss_function,
-        it,
-        model,
-        optimizer,
-        epoch,
-        wandb_run,
-    )
+        if epoch % 10 == 0:
+            save_model(
+                config,
+                loss_function,
+                it,
+                model,
+                optimizer,
+                epoch,
+                wandb_run,
+            )
 
 
 def save_model(
