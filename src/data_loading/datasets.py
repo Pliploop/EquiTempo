@@ -608,6 +608,7 @@ class MetaDataset(Dataset):
         audio = audio.squeeze()
 
         # stretch if not exactly the target tempo
+        rf = 1
         if int(round(tempo)) != idx:
             rf = idx / tempo
             audio = librosa.effects.time_stretch(audio, rate=rf)

@@ -104,39 +104,39 @@ if __name__ == "__main__":
 
     # evaluate(args.model_name, dataset_name)
 
-    # dataset_names = ['giantsteps','gtzan','hainsworth']
-    dataset_names = ["hainsworth"]
-    augmentations = ["off", "on"]
-    model_names = [
-        "checkpoints/fine_tune/model__finetune_GTZ_GIA/it_9256_loss_2.6955_acc10.8_acc20.93.pt"
-    ]
+    augmentations = ["augm_off"]
 
-    # model_names = [
-    #     [['checkpoints/fine_tune/giantsteps/augm_off/ratio_0.1/model_eternal-donkey-39_finetune_HAI_GTZ/latest.pt',
-    #     'checkpoints/fine_tune/giantsteps/augm_off/ratio_0.2/model_eternal-donkey-39_finetune_finetune_HAI_GTZ/latest.pt',
-    #     'checkpoints/fine_tune/giantsteps/augm_off/ratio_0.3/model_eternal-donkey-39_finetune_finetune_finetune_HAI_GTZ/latest.pt',
-    #     'checkpoints/fine_tune/giantsteps/augm_off/ratio_0.4/model_eternal-donkey-39_finetune_finetune_finetune_finetune_HAI_GTZ/latest.pt'],
-    #     ['checkpoints/fine_tune/giantsteps/augm_on/ratio_0.1/model_mild-wind-38_finetune_HAI_GTZ/latest.pt',
-    #      'checkpoints/fine_tune/giantsteps/augm_on/ratio_0.2/model_mild-wind-38_finetune_finetune_HAI_GTZ/latest.pt',
-    #      'checkpoints/fine_tune/giantsteps/augm_on/ratio_0.3/model_mild-wind-38_finetune_finetune_finetune_HAI_GTZ/latest.pt',
-    #      'checkpoints/fine_tune/giantsteps/augm_on/ratio_0.4/model_mild-wind-38_finetune_finetune_finetune_finetune_HAI_GTZ/latest.pt']],
-    #     [['checkpoints/fine_tune/gtzan/augm_off/ratio_0.1/model_glorious-disco-36_finetune_HAI_GIA/latest.pt',
-    #     'checkpoints/fine_tune/gtzan/augm_off/ratio_0.2/model_glorious-disco-36_finetune_finetune_HAI_GIA/latest.pt',
-    #     'checkpoints/fine_tune/gtzan/augm_off/ratio_0.3/model_glorious-disco-36_finetune_finetune_finetune_HAI_GIA/latest.pt',
-    #     'checkpoints/fine_tune/gtzan/augm_off/ratio_0.4/model_glorious-disco-36_finetune_finetune_finetune_finetune_HAI_GIA/latest.pt'],
-    #     ['checkpoints/fine_tune/gtzan/augm_on/ratio_0.1/model_quiet-resonance-35_finetune_HAI_GIA/latest.pt',
-    #      'checkpoints/fine_tune/gtzan/augm_on/ratio_0.2/model_quiet-resonance-35_finetune_finetune_HAI_GIA/latest.pt',
-    #      'checkpoints/fine_tune/gtzan/augm_on/ratio_0.3/model_quiet-resonance-35_finetune_finetune_finetune_HAI_GIA/latest.pt',
-    #      'checkpoints/fine_tune/gtzan/augm_on/ratio_0.4/model_quiet-resonance-35_finetune_finetune_finetune_finetune_HAI_GIA/latest.pt']],
-    #     [['checkpoints/fine_tune/hainsworth/augm_off/ratio_0.1/model_blooming-frost-28_finetune_GTZ_GIA/latest.pt',
-    #     'checkpoints/fine_tune/hainsworth/augm_off/ratio_0.2/model_blooming-frost-28_finetune_finetune_GTZ_GIA/latest.pt',
-    #     'checkpoints/fine_tune/hainsworth/augm_off/ratio_0.3/model_blooming-frost-28_finetune_finetune_finetune_GTZ_GIA/latest.pt',
-    #     'checkpoints/fine_tune/hainsworth/augm_off/ratio_0.4/model_blooming-frost-28_finetune_finetune_finetune_finetune_GTZ_GIA/latest.pt'],
-    #     ['checkpoints/fine_tune/hainsworth/augm_on/ratio_0.1/model_youthful-pond-27_finetune_GTZ_GIA/latest.pt',
-    #      'checkpoints/fine_tune/hainsworth/augm_on/ratio_0.2/model_youthful-pond-27_finetune_finetune_GTZ_GIA/latest.pt',
-    #      'checkpoints/fine_tune/hainsworth/augm_on/ratio_0.3/model_youthful-pond-27_finetune_finetune_finetune_GTZ_GIA/latest.pt',
-    #      'checkpoints/fine_tune/hainsworth/augm_on/ratio_0.4/model_youthful-pond-27_finetune_finetune_finetune_finetune_GTZ_GIA/latest.pt']]
-    # ]
+    dataset_names = ["giantsteps", "gtzan", "hainsworth"]
+
+    model_names = [
+        [
+            [
+                "checkpoints/fine_tune/var_rf/giantsteps/0.0/model_rural-sponge-197_finetune_HAI_GTZ/latest.pt",
+                "checkpoints/fine_tune/var_rf/giantsteps/0.1/model_rural-sponge-197_finetune_finetune_HAI_GTZ/latest.pt",
+                "checkpoints/fine_tune/var_rf/giantsteps/0.2/model_rural-sponge-197_finetune_finetune_finetune_HAI_GTZ/latest.pt",
+                "checkpoints/fine_tune/var_rf/giantsteps/0.3/model_rural-sponge-197_finetune_finetune_finetune_finetune_HAI_GTZ/latest.pt",
+                "checkpoints/fine_tune/var_rf/giantsteps/0.4/model_rural-sponge-197_finetune_finetune_finetune_finetune_finetune_HAI_GTZ/latest.pt",
+            ],
+        ],
+        [
+            [
+                "checkpoints/fine_tune/var_rf/gtzan/0.0/model_faithful-hill-196_finetune_HAI_GIA/latest.pt",
+                "checkpoints/fine_tune/var_rf/gtzan/0.1/model_faithful-hill-196_finetune_finetune_HAI_GIA/latest.pt",
+                "checkpoints/fine_tune/var_rf/gtzan/0.2/model_faithful-hill-196_finetune_finetune_finetune_HAI_GIA/latest.pt",
+                "checkpoints/fine_tune/var_rf/gtzan/0.3/model_faithful-hill-196_finetune_finetune_finetune_finetune_HAI_GIA/latest.pt",
+                "checkpoints/fine_tune/var_rf/gtzan/0.4/model_faithful-hill-196_finetune_finetune_finetune_finetune_finetune_HAI_GIA/latest.pt",
+            ],
+        ],
+        [
+            [
+                "checkpoints/fine_tune/var_rf/hainsworth/0.0/model_fallen-blaze-195_finetune_GTZ_GIA/latest.pt",
+                "checkpoints/fine_tune/var_rf/hainsworth/0.1/model_fallen-blaze-195_finetune_finetune_GTZ_GIA/latest.pt",
+                "checkpoints/fine_tune/var_rf/hainsworth/0.2/model_fallen-blaze-195_finetune_finetune_finetune_GTZ_GIA/latest.pt",
+                "checkpoints/fine_tune/var_rf/hainsworth/0.3/model_fallen-blaze-195_finetune_finetune_finetune_finetune_GTZ_GIA/latest.pt",
+                "checkpoints/fine_tune/var_rf/hainsworth/0.4/model_fallen-blaze-195_finetune_finetune_finetune_finetune_finetune_GTZ_GIA/latest.pt",
+            ],
+        ],
+    ]
 
     records = []
 
@@ -144,8 +144,9 @@ if __name__ == "__main__":
         dataset_name = dataset
         for j, augmentation in enumerate(augmentations):
             augmentation = augmentation
-            for k, model in enumerate(model_names):
+            for k, model in enumerate(model_names[i][j]):
                 model_name = model
+                ratio = float(model_name.split("/")[4].split("_")[-1])
                 print(
                     f"Dataset: {dataset_name}, Augmentation: {augmentation}, Model: {model_name}"
                 )
@@ -153,17 +154,17 @@ if __name__ == "__main__":
                 records.append(
                     {
                         "dataset": dataset_name,
+                        "ratio": ratio,
                         "augmentation": augmentation,
                         "model": model_name,
                         "acc1": acc1,
                         "acc2": acc2,
                     }
                 )
-                print(records)
 
     # save records as pandas dataframe to csv but also a a json file
-    # df = pd.DataFrame.from_records(records)
-    # df.to_csv("results.csv")
-    # df.to_json("results.json")
+    df = pd.DataFrame.from_records(records)
+    df.to_csv("results.csv")
+    df.to_json("results.json")
 
-    # print(df)
+    print(df)

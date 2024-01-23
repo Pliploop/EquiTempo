@@ -1,0 +1,16 @@
+,dataset,ratio,augmentation,model,acc1,acc2
+0,giantsteps,0.0,augm_off,checkpoints/fine_tune/var_rf/giantsteps/0.0/model_rural-sponge-197_finetune_HAI_GTZ/latest.pt,0.44126506024096385,0.7108433734939759
+1,giantsteps,0.1,augm_off,checkpoints/fine_tune/var_rf/giantsteps/0.1/model_rural-sponge-197_finetune_finetune_HAI_GTZ/latest.pt,0.49849397590361444,0.7710843373493976
+2,giantsteps,0.2,augm_off,checkpoints/fine_tune/var_rf/giantsteps/0.2/model_rural-sponge-197_finetune_finetune_finetune_HAI_GTZ/latest.pt,0.5210843373493976,0.7259036144578314
+3,giantsteps,0.3,augm_off,checkpoints/fine_tune/var_rf/giantsteps/0.3/model_rural-sponge-197_finetune_finetune_finetune_finetune_HAI_GTZ/latest.pt,0.552710843373494,0.6942771084337349
+4,giantsteps,0.4,augm_off,checkpoints/fine_tune/var_rf/giantsteps/0.4/model_rural-sponge-197_finetune_finetune_finetune_finetune_finetune_HAI_GTZ/latest.pt,0.42168674698795183,0.6626506024096386
+5,gtzan,0.0,augm_off,checkpoints/fine_tune/var_rf/gtzan/0.0/model_faithful-hill-196_finetune_HAI_GIA/latest.pt,0.3837675350701403,0.5220440881763527
+6,gtzan,0.1,augm_off,checkpoints/fine_tune/var_rf/gtzan/0.1/model_faithful-hill-196_finetune_finetune_HAI_GIA/latest.pt,0.40981963927855714,0.5270541082164328
+7,gtzan,0.2,augm_off,checkpoints/fine_tune/var_rf/gtzan/0.2/model_faithful-hill-196_finetune_finetune_finetune_HAI_GIA/latest.pt,0.40981963927855714,0.5350701402805611
+8,gtzan,0.3,augm_off,checkpoints/fine_tune/var_rf/gtzan/0.3/model_faithful-hill-196_finetune_finetune_finetune_finetune_HAI_GIA/latest.pt,0.23246492985971945,0.28256513026052105
+9,gtzan,0.4,augm_off,checkpoints/fine_tune/var_rf/gtzan/0.4/model_faithful-hill-196_finetune_finetune_finetune_finetune_finetune_HAI_GIA/latest.pt,0.3166332665330661,0.375751503006012
+10,hainsworth,0.0,augm_off,checkpoints/fine_tune/var_rf/hainsworth/0.0/model_fallen-blaze-195_finetune_GTZ_GIA/latest.pt,0.5,0.5765765765765766
+11,hainsworth,0.1,augm_off,checkpoints/fine_tune/var_rf/hainsworth/0.1/model_fallen-blaze-195_finetune_finetune_GTZ_GIA/latest.pt,0.45495495495495497,0.4954954954954955
+12,hainsworth,0.2,augm_off,checkpoints/fine_tune/var_rf/hainsworth/0.2/model_fallen-blaze-195_finetune_finetune_finetune_GTZ_GIA/latest.pt,0.6126126126126126,0.7477477477477478
+13,hainsworth,0.3,augm_off,checkpoints/fine_tune/var_rf/hainsworth/0.3/model_fallen-blaze-195_finetune_finetune_finetune_finetune_GTZ_GIA/latest.pt,0.581081081081081,0.6891891891891891
+14,hainsworth,0.4,augm_off,checkpoints/fine_tune/var_rf/hainsworth/0.4/model_fallen-blaze-195_finetune_finetune_finetune_finetune_finetune_GTZ_GIA/latest.pt,0.6711711711711712,0.8198198198198198
