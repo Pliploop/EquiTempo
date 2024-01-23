@@ -5,7 +5,9 @@ def compute_accuracy_1(truths: list, preds: list, tol: float = 0.04):
     """Calculate accuracy within a certain tolerance (percentage)."""
     results = [0] * len(truths)
     for i, (truth, pred) in enumerate(zip(truths, preds)):
-        if (abs(truth - pred) / truth) <= tol:
+        if truth == 0:
+            results[i] = 0
+        elif (abs(truth - pred) / truth) <= tol:
             results[i] = 1
     accuracy = sum(results) / len(results)
 
@@ -22,7 +24,9 @@ def compute_accuracy_2(
     "octave errors" at the specified ratios."""
     results = [0] * len(truths)
     for i, (truth, pred) in enumerate(zip(truths, preds)):
-        if (abs(truth - pred) / truth) <= tol:
+        if truth == 0:
+            results[i] = 0
+        elif (abs(truth - pred) / truth) <= tol:
             results[i] = 1
         else:
             for ratio in octave_error_ratios:

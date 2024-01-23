@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import torch
 from learn2learn.algorithms import MAML
@@ -30,11 +32,11 @@ def fast_adaptation(
         model.adapt(train_error, allow_unused=True)
 
     # Evaluate adapted model
-    predictions = model(val_audio)
+    predictions, _ = model(val_audio)
     val_error = loss_function(predictions, val_final_tempos)
     val_accuracy = compute_accuracy_1(
-        val_tempo.detach().cpu().numpy().tolist(), predictions.tolist()
-    )
+        val_tempo.detach().cpu().numpy().tolist(), predictions.argmax(dim=1).tolist()
+    )[0]  # take the results, not accuracy
 
     return val_error, val_accuracy
 
@@ -172,3 +174,47 @@ def meta_train(global_config=None, adaptation_steps=1, batch_size=25):
         for p in maml.parameters():
             p.grad.data.mul_(1.0 / len(gtzan_genres))
         optimizer.step()
+
+    save_model(
+        config,
+        loss_function,
+        it,
+        model,
+        optimizer,
+        epoch,
+        wandb_run,
+    )
+
+
+def save_model(
+    config,
+    loss,
+    it,
+    model,
+    optimizer,
+    epoch,
+    wandb_run,
+):
+    os.makedirs(config.save_path + f"/model_{wandb_run.name}_META", exist_ok=True)
+    torch.save(
+        {
+            "gen_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "loss": loss,
+            "it": it,
+            "epoch": epoch,
+        },
+        config.save_path
+        + f"/model_{wandb_run.name}_META/it_{it}_loss_{str(loss.item())[:6]}.pt",
+    )
+
+    torch.save(
+        {
+            "gen_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "loss": loss,
+            "it": it,
+            "epoch": epoch,
+        },
+        config.save_path + f"/model_{wandb_run.name}_META/latest.pt",
+    )

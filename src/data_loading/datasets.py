@@ -629,4 +629,4 @@ class MetaDataset(Dataset):
         }
 
     def create_dataloader(self):
-        return DataLoader(dataset=self, batch_size=1, shuffle=True)
+        return DataLoader(dataset=self, batch_size=25, shuffle=True)
